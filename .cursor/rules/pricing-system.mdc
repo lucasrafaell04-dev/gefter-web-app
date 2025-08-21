@@ -1,0 +1,172 @@
+# Pricing System & Calculation Logic
+
+## Core Pricing Engine
+
+### Main Calculation Function: [store/useProjectStore.ts](mdc:store/useProjectStore.ts)
+
+The `calculateTotalPrice()` function handles all pricing calculations for the project.
+
+## Pricing Components
+
+### 1. Material Cost Calculation
+**Formula**: Area (sq ft) × Price per sq ft
+
+```typescript
+// Calculate area for each shape
+const measurements = shape.measurements;
+let area = 0;
+
+// Convert inches to feet for calculations
+const inchesToFeet = (value: number) => value / 12;
+
+// Shape-specific area calculations
+if (shape.layout.layout_type === 'L-shape') {
+  const widthA = inchesToFeet(measurements['width_a'] || 0);
+  const widthB = inchesToFeet(measurements['width_b'] || 0);
+  const depthA = inchesToFeet(measurements['depth_a'] || 0);
+  const depthB = inchesToFeet(measurements['depth_b'] || 0);
+  area = (widthA * depthA) + (widthB * depthB);
+}
+
+// Apply material pricing
+if (selectedMaterial) {
+  total += area * selectedMaterial.price_per_sqft;
+}
+```
+
+### 2. Backsplash Cost Calculation
+**Formula**: Perimeter (ft) × Height (ft) × Material price per sq ft
+
+```typescript
+// Add backsplash area if enabled
+if (shape.hasBacksplash && shape.backsplashHeight) {
+  const perimeterInFeet = Object.values(measurements).reduce((sum, val) => sum + (val || 0), 0) / 12;
+  area += perimeterInFeet * (shape.backsplashHeight / 12); // Convert inches to feet
+}
+```
+
+### 3. Edge Cost Calculation
+**Formula**: Linear feet of non-wall edges × Price per linear ft
+
+```typescript
+// Calculate edge cost (only for non-wall measurements)
+if (selectedEdgeStyle) {
+  let edgeLength = 0;
+  Object.entries(shape.wallToggles).forEach(([field, isWall]) => {
+    if (!isWall && measurements[field]) {
+      edgeLength += (measurements[field] || 0) / 12; // inches to feet
+    }
+  });
+  total += edgeLength * selectedEdgeStyle.price_per_linear_ft;
+}
+```
+
+## Unit Conversion System
+
+### Input Units
+- **User Input**: All measurements in inches
+- **Display**: Show "in" labels throughout interface
+- **Validation**: Accept decimal values with 3 decimal places
+
+### Internal Calculations
+- **Conversion Factor**: 1 foot = 12 inches
+- **Area Calculations**: Convert to feet before multiplying
+- **Linear Calculations**: Convert to feet for edge pricing
+
+```typescript
+// Conversion helper function
+const inchesToFeet = (value: number) => value / 12;
+
+// Example usage
+const widthA_ft = (measurements['width_a'] || 0) / 12;
+const depthA_ft = (measurements['depth_a'] || 0) / 12;
+const area = widthA_ft * depthA_ft; // Result in square feet
+```
+
+## Shape-Specific Calculations
+
+### L-Shape Countertop
+```typescript
+// Two rectangular sections
+const widthA = inchesToFeet(measurements['width_a'] || 0);
+const widthB = inchesToFeet(measurements['width_b'] || 0);
+const depthA = inchesToFeet(measurements['depth_a'] || 0);
+const depthB = inchesToFeet(measurements['depth_b'] || 0);
+area = (widthA * depthA) + (widthB * depthB);
+```
+
+### U-Shape Countertop
+```typescript
+// Three rectangular sections
+const widthA = inchesToFeet(measurements['width_a'] || 0);
+const widthB = inchesToFeet(measurements['width_b'] || 0);
+const widthC = inchesToFeet(measurements['width_c'] || 0);
+const depth = inchesToFeet(measurements['depth'] || 0);
+area = (widthA + widthB + widthC) * depth;
+```
+
+### Straight/Island Countertop
+```typescript
+// Single rectangular section
+const width = inchesToFeet(measurements['width_a'] || 0);
+const depth = inchesToFeet(measurements['depth_a'] || 0);
+area = width * depth;
+```
+
+## Pricing Data Sources
+
+### Material Pricing
+- **Source**: `materials` table in database
+- **Field**: `price_per_sqft` (numeric)
+- **Unit**: Dollars per square foot
+- **Selection**: Single material applied to all shapes
+
+### Edge Pricing
+- **Source**: `edge_styles` table in database
+- **Field**: `price_per_linear_ft` (numeric)
+- **Unit**: Dollars per linear foot
+- **Application**: Only to non-wall measurements
+
+## Cost Breakdown Display
+
+### Project Summary Component
+Shows detailed cost breakdown:
+- **Material Cost**: Total area × Material price
+- **Edge Cost**: Total linear feet × Edge price
+- **Backsplash Cost**: Included in material area
+- **Total Cost**: Sum of all components
+
+### Real-time Updates
+- **Live Calculation**: Updates as user modifies measurements
+- **Instant Feedback**: Price changes immediately
+- **Validation**: Prevents invalid calculations
+
+## Pricing Validation
+
+### Input Validation
+- **Minimum Values**: Prevent negative measurements
+- **Maximum Values**: Reasonable upper limits
+- **Required Fields**: Ensure all necessary measurements provided
+
+### Calculation Validation
+- **Area Validation**: Ensure positive area values
+- **Edge Validation**: Only calculate for non-wall measurements
+- **Backsplash Validation**: Height within reasonable range (1-24 inches)
+
+## Future Pricing Features
+
+### Additional Cost Factors
+- **Sink Cutouts**: Deduct sink area from material cost
+- **Cooktop Cutouts**: Deduct cooktop area from material cost
+- **Special Features**: Additional pricing for special features
+- **Installation**: Separate installation cost calculation
+
+### Discount System
+- **Volume Discounts**: Discounts for large projects
+- **Material Discounts**: Special pricing for premium materials
+- **Seasonal Promotions**: Time-based pricing adjustments
+
+description:
+globs:
+alwaysApply: false
+---

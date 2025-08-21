@@ -1,0 +1,81 @@
+# Regras de Negócio - Cálculos e Lógica
+
+## Engine de Cálculos
+[utils/calculations.ts](mdc:utils/calculations.ts) - Motor de cálculos automáticos
+
+### Cálculo de Área
+```typescript
+// Conversão de polegadas para pés
+const inchesToFeet = (value: number) => value / 12;
+
+// L-Shape: (Width A × Depth A) + (Width B × Depth B)
+// U-Shape: (Width A + Width B + Width C) × Depth
+// Single Wall: Width × Depth
+```
+
+### Cálculo de Preço Total
+```typescript
+calculateTotalPrice() {
+  // 1. Área total de cada forma
+  // 2. Custo do material (área × preço/sqft)
+  // 3. Custo das bordas (perímetro não-parede × preço/linear ft)
+  // 4. Custo do backsplash (perímetro × altura × preço/sqft)
+}
+```
+
+## Regras de Auto-Cálculo
+
+### L-Shape Específicas
+- **Width D** = Width A - Depth B
+- **Width C** = Width B - Depth A
+- Aplicadas automaticamente quando campos são preenchidos
+
+### U-Shape Específicas
+- Campos calculados baseados em fórmulas do banco
+- Dependências entre campos gerenciadas automaticamente
+
+## Regras de Validação
+
+### Medidas
+- **Mínimo**: 12 polegadas (1 pé)
+- **Máximo**: 240 polegadas (20 pés)
+- **Unidades**: Entrada em polegadas, cálculos em pés
+
+### Wall Toggles
+- **Aplicação**: Bordas só aplicadas em medidas não-parede
+- **Backsplash**: Só aplicado em medidas de parede
+- **Cálculo**: Perímetro total para backsplash
+
+### Material e Bordas
+- **Material**: Um material para todo o projeto
+- **Bordas**: Aplicadas apenas em medidas não-parede
+- **Backsplash**: Altura configurável (4", 6", 8")
+
+## Fluxo de Dados
+
+### Persistência
+- **sessionStorage**: Limpa ao fechar aba
+- **Estado**: Mantido durante navegação
+- **Cache**: Dados estáticos em React Query
+
+### Validações
+- **Campos obrigatórios**: Marcados no banco
+- **Tipos de dados**: Validação TypeScript
+- **Ranges**: Validação de medidas
+- **Dependências**: Campos calculados automaticamente
+
+## Otimizações de Performance
+
+### Cálculos
+- **Memoização**: Resultados cacheados
+- **Incremental**: Só recalcula quando necessário
+- **Batch**: Múltiplas atualizações em lote
+
+### Estado
+- **Seletivo**: Só atualiza campos modificados
+- **Imutável**: Spread operator para updates
+- **Condicional**: Só atualiza se dados mudaram
+description:
+globs:
+alwaysApply: false
+---

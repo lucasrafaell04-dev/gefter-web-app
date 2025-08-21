@@ -1,0 +1,36 @@
+# Gerenciamento de Estado - Zustand Store
+
+## Store Principal
+[store/useProjectStore.ts](mdc:store/useProjectStore.ts) - Estado global da aplicação
+
+### Estado Inicial
+```typescript
+const initialState: ProjectState = {
+  selectedRoom: null,           // Tipo de cômodo (kitchen/bathroom)
+  selectedShapes: [],           // Formas selecionadas com medidas
+  selectedMaterial: null,       // Material escolhido
+  selectedEdgeStyle: null,      // Estilo de borda escolhido
+  currentStep: 1,              // Step atual (1-6)
+  totalSteps: 6,               // Total de steps
+};
+```
+
+### Ações Principais
+- `setSelectedRoom(room)` - Define cômodo selecionado
+- `addSelectedShape(shape)` - Adiciona forma com medidas
+- `removeSelectedShape(index)` - Remove forma por índice
+- `updateShapeMeasurements(shapeIndex, measurements)` - Atualiza medidas
+- `setSelectedMaterial(material)` - Define material
+- `setSelectedEdgeStyle(edgeStyle)` - Define estilo de borda
+- `nextStep()` / `previousStep()` - Navegação entre steps
+- `calculateTotalPrice()` - Calcula preço total
+
+### Persistência
+- **Storage**: sessionStorage (limpa ao fechar aba)
+- **Middleware**: Zustand persist
+- **Nome**: 'gefter-project-storage'
+
+### Otimizações
+- Subscrições seletivas para evitar re-renders desnecessários
+- Atualizações condicionais (só atualiza se dados mudaram)
+- Estado imutável com spread operator

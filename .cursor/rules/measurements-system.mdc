@@ -1,0 +1,141 @@
+# Measurements System & Dynamic Field Rendering
+
+## Core Component: [components/MeasurementsPage.tsx](mdc:components/MeasurementsPage.tsx)
+
+The measurements page is the most complex component, handling dynamic field rendering, SVG updates, and real-time calculations.
+
+## Key Features
+
+### Dynamic Field System
+- **Database-Driven**: Fields are fetched from `layout_fields` table based on selected layout
+- **Field Types**: manual, auto_calculated, sink, backsplash
+- **Real-time Updates**: Measurements update SVG labels immediately
+- **Validation**: Required fields and data type validation
+
+### SVG Rendering System
+- **Dynamic Labels**: SVG text elements are replaced with current measurement values
+- **Database-First**: SVG images prioritized from database `layout_image` field
+- **Fallback System**: Local assets used when database images unavailable
+- **Performance**: SVG content cached, only text labels updated
+
+### Image Management in [data/shapeImageMap.ts](mdc:data/shapeImageMap.ts)
+
+#### PNG Images (Shape Selection)
+```typescript
+export function getShapePngImage(layoutName: string): string {
+  const pngFallbackMap: Record<string, string> = {
+    'SingleWall': '/assets/images/SingleWall.png',
+    'LShape': '/assets/images/LShape.png',
+    // ... other mappings
+  };
+  return pngFallbackMap[layoutName] || '/assets/images/LShape.png';
+}
+```
+
+#### SVG Images (Measurements)
+```typescript
+export function getShapeSvgImage(layoutName: string, layoutImage?: string): string {
+  // Prioritize database image URL
+  if (layoutImage && layoutImage.trim() !== '') {
+    return layoutImage;
+  }
+  // Fallback to local SVG assets
+  const svgFallbackMap: Record<string, string> = {
+    'SingleWall': '/assets/images/SingleWall.svg',
+    'LShape': '/assets/images/LShape.svg',
+    // ... other mappings
+  };
+  return svgFallbackMap[layoutName] || '/assets/images/LShape.svg';
+}
+```
+
+## Auto-Calculation Engine in [utils/calculations.ts](mdc:utils/calculations.ts)
+
+### Formula Evaluation
+```typescript
+export function evaluateFormula(formula: string, measurements: Record<string, number>): number {
+  // Safe mathematical formula evaluation
+  // Replaces field names with actual values
+  // Handles basic arithmetic operations
+}
+```
+
+### Auto-Calculation Process
+1. **Fetch Rules**: Get auto-calculation rules from database
+2. **Evaluate Dependencies**: Check which fields trigger calculations
+3. **Apply Formulas**: Execute mathematical formulas
+4. **Update State**: Store calculated values in shape measurements
+
+## Performance Optimizations
+
+### Selective State Subscriptions
+```typescript
+// Only subscribe to relevant state slices
+const currentShape = useProjectStore(state => state.selectedShapes[state.currentStep - 1]);
+const selectedShapes = useProjectStore(state => state.selectedShapes);
+const updateShapeMeasurements = useProjectStore(state => state.updateShapeMeasurements);
+```
+
+### Memoized Components
+```typescript
+const MeasurementInput = React.memo(({ field, value, onChange }) => {
+  // Component logic
+});
+
+const DynamicSvgDiagram = React.memo(({ layoutName, layoutImage, manualFields, measurements }) => {
+  // SVG rendering logic
+}, (prevProps, nextProps) => {
+  // Custom comparison function
+  return prevProps.layoutName === nextProps.layoutName &&
+         prevProps.layoutImage === nextProps.layoutImage &&
+         JSON.stringify(prevProps.manualFields) === JSON.stringify(nextProps.manualFields);
+});
+```
+
+### Stable Function References
+```typescript
+const handleMeasurementChange = useCallback((fieldName: string, value: number) => {
+  updateShapeMeasurements(currentShapeIndex, { [fieldName]: value });
+}, [currentShapeIndex, updateShapeMeasurements]);
+```
+
+## SVG Label Update Process
+
+### Text Replacement Strategy
+1. **Load Base SVG**: Fetch SVG content from database or local assets
+2. **Remove Existing Text**: Strip all `<text>` elements from SVG
+3. **Inject New Labels**: Replace text elements with current measurement values
+4. **Regex Replacement**: Use field labels to find and replace specific text elements
+
+```typescript
+// Example text replacement
+manualFields.forEach((field) => {
+  const value = measurements[field.field_name] || 0;
+  const fieldLabel = field.field_label;
+  const labelRegex = new RegExp(`(<text[^>]*>\\s*<tspan[^>]*>\\s*)${fieldLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\s*</tspan>\\s*</text>)`, 'g');
+  completeSvg = completeSvg.replace(labelRegex, (match, startTag, endTag) => {
+    return `${startTag}${fieldLabel}: ${value.toFixed(3)} in${endTag}`;
+  });
+});
+```
+
+## Wall Toggle System
+- **Per-Field Toggles**: Each measurement field has a wall toggle
+- **Edge Calculation**: Only non-wall measurements contribute to edge pricing
+- **Visual Feedback**: Toggle state visually indicates wall contact
+
+## Backsplash System
+- **Global Toggle**: Single toggle for entire shape
+- **Height Input**: Configurable backsplash height (1-24 inches)
+- **Area Calculation**: Perimeter × height added to total area
+- **Pricing**: Included in material cost calculation
+
+## Unit System
+- **Input Units**: All measurements input in inches
+- **Internal Calculations**: Convert to feet for area calculations
+- **Display Units**: Show "in" labels throughout interface
+- **Conversion Factor**: 1 foot = 12 inches
+description:
+globs:
+alwaysApply: false
+---

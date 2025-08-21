@@ -1,0 +1,49 @@
+# Arquitetura de Componentes
+
+## Estrutura de Componentes
+
+### Componentes de Step
+- [components/HomePage.tsx](mdc:components/HomePage.tsx) - Tela inicial com imagens aleatórias
+- [components/RoomSelection.tsx](mdc:components/RoomSelection.tsx) - Seleção de cômodo (kitchen/bathroom)
+- [components/LayoutSelection.tsx](mdc:components/LayoutSelection.tsx) - Seleção de formas com +/- buttons
+- [components/MeasurementsPage.tsx](mdc:components/MeasurementsPage.tsx) - Medidas com SVG dinâmico
+- [components/MaterialSelection.tsx](mdc:components/MaterialSelection.tsx) - Seleção de materiais
+- [components/EdgeSelection.tsx](mdc:components/EdgeSelection.tsx) - Seleção de estilos de borda
+- [components/ProjectSummary.tsx](mdc:components/ProjectSummary.tsx) - Resumo final
+
+### Padrões de Design
+- **Dark theme**: Cards com `bg-gray-800` e texto branco
+- **Responsivo**: Classes `md:` para desktop, mobile-first
+- **Animações**: Framer Motion para transições suaves
+- **Loading states**: Spinners durante carregamento
+- **Error handling**: Mensagens de erro amigáveis
+
+### Hooks Customizados
+- [hooks/useApiCache.ts](mdc:hooks/useApiCache.ts) - Cache global com React Query
+  - `useLayouts()` - Layouts disponíveis
+  - `useMaterials()` - Materiais disponíveis
+  - `useEdgeStyles()` - Estilos de borda
+  - `useLayoutData(layoutId)` - Dados completos do layout
+
+### Utilitários
+- [utils/calculations.ts](mdc:utils/calculations.ts) - Engine de cálculos automáticos
+- [data/shapeImageMap.ts](mdc:data/shapeImageMap.ts) - Mapeamento de imagens de formas
+
+## Padrões de Implementação
+
+### Estado Local vs Global
+- **Estado Global**: Dados do projeto (Zustand)
+- **Estado Local**: UI state (useState)
+- **Cache**: Dados estáticos (React Query)
+
+### Performance
+- Subscrições seletivas do Zustand
+- React.memo para componentes pesados
+- useCallback para funções estáveis
+- Lazy loading de imagens
+
+### Responsividade
+- Mobile-first com Tailwind
+- Breakpoints: `md:` (768px+)
+- Flexbox para layouts adaptativos
+- Imagens responsivas com Next.js Image

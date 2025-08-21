@@ -1,0 +1,57 @@
+# Schema do Banco de Dados - PostgreSQL/Supabase
+
+## Configuração Prisma
+[prisma/schema.prisma](mdc:prisma/schema.prisma) - Schema principal do banco
+
+### Conexão
+```prisma
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["auth", "public"]
+}
+```
+
+## Tabelas Principais
+
+### layouts
+- **Propósito**: Formas de cozinha disponíveis
+- **Campos**: id, name, description, layout_image, layout_type, svg_template_name, is_active
+- **Relacionamentos**: layout_fields, auto_calculation_rules, quote_items
+
+### materials
+- **Propósito**: Materiais disponíveis para bancadas
+- **Campos**: id, name, brand, color, thickness, price_per_sqft, desc_Curta, desc_Longa
+- **Relacionamentos**: suppliers, quote_items
+
+### edge_styles
+- **Propósito**: Estilos de borda disponíveis
+- **Campos**: id, name, description, image, price_per_linear_ft, thickness, is_active
+- **Criada via**: [database/create_edge_styles_table.sql](mdc:database/create_edge_styles_table.sql)
+
+### layout_fields
+- **Propósito**: Campos de medida para cada layout
+- **Campos**: id, layout_id, field_name, field_label, svg_id, field_type, data_type, unit_type
+- **Tipos**: manual, auto_calculated, sink, backsplash
+
+### auto_calculation_rules
+- **Propósito**: Regras de cálculo automático para campos
+- **Campos**: id, layout_id, target_field_name, formula, description, is_active
+- **Exemplo**: L-Shape - Width D = Width A - Depth B
+
+### layout_field_groups
+- **Propósito**: Agrupamento de campos por seção
+- **Campos**: id, layout_id, group_name, group_label, sort_order, is_visible
+
+## APIs
+- [app/api/layouts/route.ts](mdc:app/api/layouts/route.ts) - Layouts
+- [app/api/materials/route.ts](mdc:app/api/materials/route.ts) - Materiais
+- [app/api/edge-styles/route.ts](mdc:app/api/edge-styles/route.ts) - Edge styles
+- [app/api/layout-fields/[layoutId]/route.ts](mdc:app/api/layout-fields/[layoutId]/route.ts) - Campos de layout
+- [app/api/auto-calculation-rules/[layoutId]/route.ts](mdc:app/api/auto-calculation-rules/[layoutId]/route.ts) - Regras de cálculo
+
+## Serviços
+- [services/apiService.ts](mdc:services/apiService.ts) - Cliente API
+- [services/prismaService.ts](mdc:services/prismaService.ts) - Serviço Prisma
+- [lib/prisma.ts](mdc:lib/prisma.ts) - Cliente Prisma singleton

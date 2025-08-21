@@ -1,0 +1,112 @@
+# Arquitetura de APIs - Next.js App Router
+
+## Estrutura de APIs
+
+### APIs Principais
+- [app/api/layouts/route.ts](mdc:app/api/layouts/route.ts) - GET layouts ativos
+- [app/api/materials/route.ts](mdc:app/api/materials/route.ts) - GET materiais
+- [app/api/edge-styles/route.ts](mdc:app/api/edge-styles/route.ts) - GET edge styles
+- [app/api/layout-fields/[layoutId]/route.ts](mdc:app/api/layout-fields/[layoutId]/route.ts) - GET campos do layout
+- [app/api/auto-calculation-rules/[layoutId]/route.ts](mdc:app/api/auto-calculation-rules/[layoutId]/route.ts) - GET regras de cálculo
+- [app/api/layout-field-groups/[layoutId]/route.ts](mdc:app/api/layout-field-groups/[layoutId]/route.ts) - GET grupos de campos
+
+### Padrão de Implementação
+```typescript
+export async function GET() {
+  try {
+    const data = await prisma.table.findMany({
+      where: { is_active: true },
+      orderBy: { sort_order: 'asc' },
+    });
+    
+    return NextResponse.json(formattedData);
+  } catch (error) {
+    console.error('Error:', error);
+    return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 });
+  }
+}
+```
+
+## Camada de Serviços
+
+### API Service
+[services/apiService.ts](mdc:services/apiService.ts) - Cliente para APIs
+```typescript
+export const apiService = {
+  getLayouts: () => fetch('/api/layouts').then(res => res.json()),
+  getMaterials: () => fetch('/api/materials').then(res => res.json()),
+  getEdgeStyles: () => fetch('/api/edge-styles').then(res => res.json()),
+  // ...
+};
+```
+
+### Prisma Service
+[services/prismaService.ts](mdc:services/prismaService.ts) - Serviço de banco
+```typescript
+export const prismaService = {
+  getLayouts: async () => {
+    const layouts = await prisma.layouts.findMany({
+      where: { is_active: true },
+      orderBy: { sort_order: 'asc' },
+    });
+    return layouts.map(formatLayout);
+  },
+  // ...
+};
+```
+
+## Cache com React Query
+
+### Hooks Customizados
+[hooks/useApiCache.ts](mdc:hooks/useApiCache.ts) - Cache global
+```typescript
+export function useLayouts() {
+  return useQuery({
+    queryKey: queryKeys.layouts,
+    queryFn: apiService.getLayouts,
+    staleTime: 1000 * 60 * 60, // 1 hora
+    gcTime: 1000 * 60 * 60 * 24, // 24 horas
+  });
+}
+```
+
+### Configuração
+[app/providers.tsx](mdc:app/providers.tsx) - Provider do React Query
+```typescript
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 60, // 1 hora
+      gcTime: 1000 * 60 * 60 * 24, // 24 horas
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+```
+
+## Tratamento de Erros
+
+### Padrão de Error Handling
+- **Try/catch** em todas as APIs
+- **Logging** de erros no console
+- **Resposta padronizada** com status 500
+- **Fallback data** quando necessário
+
+### Validação de Dados
+- **TypeScript** para validação de tipos
+- **Prisma** para validação de schema
+- **Formatação** de dados antes do retorno
+
+## Performance
+
+### Otimizações
+- **Cache** com React Query
+- **Stale time** de 1 hora para dados estáticos
+- **Garbage collection** de 24 horas
+- **Retry limit** de 1 tentativa
+- **No refetch** no focus da janela
+description:
+globs:
+alwaysApply: false
+---

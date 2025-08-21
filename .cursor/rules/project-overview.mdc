@@ -1,0 +1,28 @@
+# Gefter Web App - Visão Geral do Projeto
+
+## Descrição
+Aplicação web para cotação de bancadas de cozinha/banheiro com fluxo de 6 steps: seleção de cômodo, layouts, medidas, materiais, bordas e resumo.
+
+## Arquitetura Principal
+- **Framework**: Next.js 14 com App Router
+- **Estado**: Zustand com persistência em sessionStorage
+- **Cache**: React Query (TanStack Query) para dados estáticos
+- **Banco**: PostgreSQL via Supabase com Prisma ORM
+- **UI**: Tailwind CSS + Framer Motion
+- **Tipagem**: TypeScript
+
+## Fluxo de Navegação
+1. **HomePage** (Step 1) - Tela inicial com imagens aleatórias
+2. **RoomSelection** (Step 2 of 6) - Kitchen/Bathroom
+3. **LayoutSelection** (Step 3 of 6) - Formas de cozinha
+4. **MeasurementsPage** (Step 4 of 6) - Medidas das formas
+5. **MaterialSelection** (Step 5 of 6) - Materiais disponíveis
+6. **EdgeSelection** (Step 6 of 6) - Estilos de borda
+7. **ProjectSummary** - Resumo final com preços
+
+## Componentes Principais
+- [app/page.tsx](mdc:app/page.tsx) - Roteamento principal
+- [store/useProjectStore.ts](mdc:store/useProjectStore.ts) - Estado global
+- [hooks/useApiCache.ts](mdc:hooks/useApiCache.ts) - Cache de dados
+- [services/apiService.ts](mdc:services/apiService.ts) - Chamadas API
+- [types/index.ts](mdc:types/index.ts) - Tipos TypeScript

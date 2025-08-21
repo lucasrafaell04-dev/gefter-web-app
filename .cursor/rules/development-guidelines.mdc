@@ -1,0 +1,130 @@
+# Diretrizes de Desenvolvimento
+
+## Padrões de Código
+
+### TypeScript
+- **Tipagem forte**: Sempre definir tipos para props e state
+- **Interfaces**: Usar interfaces do [types/index.ts](mdc:types/index.ts)
+- **Generics**: Usar quando apropriado para reutilização
+- **Strict mode**: Habilitado no tsconfig.json
+
+### React
+- **Functional Components**: Usar hooks ao invés de classes
+- **Props destructuring**: Destruturar props no parâmetro
+- **Event handlers**: Usar useCallback para estabilidade
+- **Conditional rendering**: Usar operador ternário ou &&
+
+### Estado
+- **Zustand**: Para estado global do projeto
+- **useState**: Para estado local de UI
+- **useEffect**: Para side effects e sincronização
+- **Subscrições seletivas**: Só subscrever campos necessários
+
+## Estrutura de Arquivos
+
+### Organização
+```
+app/                    # Next.js App Router
+├── api/               # API routes
+├── layout.tsx         # Root layout
+├── page.tsx           # Main page
+└── providers.tsx      # React Query provider
+
+components/            # React components
+├── HomePage.tsx       # Step 1
+├── RoomSelection.tsx  # Step 2
+├── LayoutSelection.tsx # Step 3
+├── MeasurementsPage.tsx # Step 4
+├── MaterialSelection.tsx # Step 5
+├── EdgeSelection.tsx  # Step 6
+└── ProjectSummary.tsx # Final
+
+store/                 # State management
+└── useProjectStore.ts # Zustand store
+
+services/              # API services
+├── apiService.ts      # Client-side API calls
+└── prismaService.ts   # Server-side database
+
+hooks/                 # Custom hooks
+└── useApiCache.ts     # React Query hooks
+
+types/                 # TypeScript types
+└── index.ts           # All interfaces
+
+utils/                 # Utilities
+└── calculations.ts    # Business logic
+```
+
+## Convenções de Nomenclatura
+
+### Componentes
+- **PascalCase**: `LayoutSelection.tsx`
+- **Descriptivo**: Nomes que explicam a função
+- **Consistente**: Padrão similar entre componentes
+
+### Funções
+- **camelCase**: `handleEdgeSelect`
+- **Verbos**: Começar com verbo de ação
+- **Claras**: Nomes que explicam o que fazem
+
+### Variáveis
+- **camelCase**: `selectedShapes`
+- **Booleanos**: `isLoading`, `hasError`
+- **Arrays**: Plural (`materials`, `edgeStyles`)
+
+## Performance
+
+### Otimizações
+- **React.memo**: Para componentes pesados
+- **useCallback**: Para funções passadas como props
+- **useMemo**: Para cálculos caros
+- **Lazy loading**: Para imagens e componentes
+
+### Estado
+- **Updates condicionais**: Só atualizar se necessário
+- **Subscrições seletivas**: Evitar re-renders desnecessários
+- **Imutabilidade**: Usar spread operator
+
+## Estilo e UI
+
+### Tailwind CSS
+- **Mobile-first**: Começar com classes mobile
+- **Responsivo**: Usar breakpoints `md:`, `lg:`
+- **Consistente**: Usar classes padrão do design system
+- **Dark theme**: `bg-gray-800` para cards
+
+### Animações
+- **Framer Motion**: Para transições suaves
+- **Consistente**: Mesma duração e easing
+- **Performance**: Usar `transform` ao invés de `position`
+
+## Tratamento de Erros
+
+### Padrão
+```typescript
+try {
+  const data = await apiService.getData();
+  setData(data);
+} catch (error) {
+  setError('Failed to load data');
+  console.error('Error:', error);
+}
+```
+
+### Loading States
+- **Spinners**: Durante carregamento
+- **Skeleton**: Para conteúdo carregando
+- **Error messages**: Amigáveis ao usuário
+
+## Testes e Qualidade
+
+### Linting
+- **ESLint**: Configurado para React/TypeScript
+- **Prettier**: Formatação consistente
+- **Type checking**: TypeScript strict mode
+
+### Build
+- **Next.js build**: Sem erros de TypeScript
+- **Prisma generate**: Schema atualizado
+- **Environment variables**: Configuradas corretamente
