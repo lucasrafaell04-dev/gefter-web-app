@@ -138,12 +138,24 @@ export interface ShapeSpecification {
   keepCurrentCabinets?: 'yes' | 'no';
   countertopToRemove?: string;
   hasHolesOrCuts?: 'yes' | 'no';
-  cutouts: {
+  cutouts?: {
     [cutoutId: string]: number; // cutoutId -> quantity
   };
-  sinks: {
+  sinks?: {
     [sinkId: string]: number; // sinkId -> quantity
   };
+}
+
+// Lead information types
+export interface LeadInfo {
+  fullName: string;
+  email: string;
+  confirmEmail: string;
+  phone: string;
+  streetAddress: string;
+  zipCode: string;
+  city: string;
+  state: string;
 }
 
 // Application state types
@@ -161,6 +173,7 @@ export interface ProjectState {
   selectedShapes: SelectedShape[];
   selectedMaterial: Material | null;
   selectedEdgeStyle: EdgeStyle | null;
+  leadInfo: LeadInfo | null;
   currentStep: number;
   totalSteps: number;
 }

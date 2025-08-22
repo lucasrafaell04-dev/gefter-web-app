@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Info, ChevronUp, ChevronDown, Minus, Plus } from 'lucide-react';
 import { useProjectStore } from '@/store/useProjectStore';
-import { CutoutOption, SinkOption } from '@/types';
+import { CutoutOption, SinkOption, LayoutField } from '@/types';
 import Image from 'next/image';
+import { useLayoutData } from '@/hooks/useApiCache';
+import { DynamicSvgDiagram } from './MeasurementsPage';
 
 // Mock data for cutouts and sinks - in a real app, this would come from the database
 const CUTOUT_OPTIONS: CutoutOption[] = [
@@ -62,6 +64,12 @@ export default function SpecificationPage() {
 
   const currentShape = selectedShapes[currentShapeIndex];
 
+  // Use cache hook to get layout data for SVG diagram
+  const { fields, isLoading: loading, error } = useLayoutData(currentShape?.layout?.id || '');
+  const layoutFields = fields.data || [];
+  const manualFields = layoutFields.filter(field => field.field_type === 'manual' && field.is_visible);
+  const autoCalculatedFields = layoutFields.filter(field => field.field_type === 'auto_calculated' && field.is_visible);
+
   const handleSpecificationChange = (field: string, value: string) => {
     updateShapeSpecification(currentShapeIndex, { [field]: value });
   };
@@ -105,6 +113,24 @@ export default function SpecificationPage() {
     return currentShape?.specification?.sinks?.[sinkId] || 0;
   };
 
+  // Initialize specification if it doesn't exist
+  const initializeSpecification = () => {
+    if (!currentShape?.specification) {
+      updateShapeSpecification(currentShapeIndex, {
+        keepCurrentCabinets: '',
+        countertopToRemove: '',
+        hasHolesOrCuts: '',
+        cutouts: {},
+        sinks: {}
+      });
+    }
+  };
+
+  // Initialize specification when component mounts or shape changes
+  useEffect(() => {
+    initializeSpecification();
+  }, [currentShapeIndex, currentShape?.layout.id]);
+
   if (!currentShape) {
     return <div>No shapes selected</div>;
   }
@@ -132,7 +158,7 @@ export default function SpecificationPage() {
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 py-8 pb-32">
         {/* Step Indicator */}
-        <div className="text-sm text-gray-500 mb-4">Step 5 of 7</div>
+        <div className="text-sm text-gray-500 mb-4">Step 5 of 10</div>
 
         {/* Progress Indicator */}
         <div className="mb-6">
@@ -157,12 +183,24 @@ export default function SpecificationPage() {
         <div className="mb-8">
           <div className="bg-gray-800 rounded-2xl p-6">
             <div className="flex justify-center">
-              <div className="w-64 h-64 bg-[#4F5750] rounded-lg flex items-center justify-center">
-                <div className="text-white text-sm text-center">
-                  <div className="mb-4">L-Shaped Kitchen Layout</div>
-                  <div className="text-xs opacity-75">
-                    Sink area with faucet and burners
-                  </div>
+              <div className="w-64 h-64 bg-[#4F5750] rounded-lg flex items-center justify-center overflow-hidden">
+                <div className="text-white text-xs font-medium w-full h-full">
+                  {!loading && !error && manualFields.length > 0 ? (
+                    <DynamicSvgDiagram 
+                      layoutName={currentShape.layout.name} 
+                      layoutImage={currentShape.layout.layout_image}
+                      manualFields={manualFields} 
+                      measurements={currentShape.measurements}
+                      autoCalculatedFields={autoCalculatedFields}
+                    />
+                  ) : (
+                    <div className="text-white text-sm text-center">
+                      <div className="mb-4">{currentShape.layout.name}</div>
+                      <div className="text-xs opacity-75">
+                        Loading layout diagram...
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -184,7 +222,7 @@ export default function SpecificationPage() {
             <select
               value={currentShape.specification?.keepCurrentCabinets || ''}
               onChange={(e) => handleSpecificationChange('keepCurrentCabinets', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
             >
               <option value="">Select</option>
               <option value="yes">Yes</option>
@@ -205,7 +243,7 @@ export default function SpecificationPage() {
             <select
               value={currentShape.specification?.countertopToRemove || ''}
               onChange={(e) => handleSpecificationChange('countertopToRemove', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
             >
               <option value="">Select</option>
               {COUNTERTOP_REMOVAL_OPTIONS.map((option) => (
@@ -227,7 +265,7 @@ export default function SpecificationPage() {
             <select
               value={currentShape.specification?.hasHolesOrCuts || ''}
               onChange={(e) => handleSpecificationChange('hasHolesOrCuts', e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
             >
               <option value="">Select</option>
               <option value="yes">Yes</option>
@@ -264,7 +302,7 @@ export default function SpecificationPage() {
                       >
                         <Minus className="w-4 h-4" />
                       </button>
-                      <span className="w-8 text-center font-medium">{getCurrentCutoutQuantity(cutout.id)}</span>
+                      <span className="w-8 text-center font-medium text-gray-900">{getCurrentCutoutQuantity(cutout.id)}</span>
                       <button
                         onClick={() => handleCutoutQuantityChange(cutout.id, getCurrentCutoutQuantity(cutout.id) + 1)}
                         className="w-8 h-8 bg-blue-500 hover:bg-blue-600 rounded-full flex items-center justify-center transition-colors text-white"
@@ -320,7 +358,7 @@ export default function SpecificationPage() {
                     >
                       <Minus className="w-4 h-4" />
                     </button>
-                    <span className="w-8 text-center font-medium">{getCurrentSinkQuantity(sink.id)}</span>
+                    <span className="w-8 text-center font-medium text-gray-900">{getCurrentSinkQuantity(sink.id)}</span>
                     <button
                       onClick={() => handleSinkQuantityChange(sink.id, getCurrentSinkQuantity(sink.id) + 1)}
                       className="w-8 h-8 bg-green-500 hover:bg-green-600 rounded-full flex items-center justify-center transition-colors text-white"

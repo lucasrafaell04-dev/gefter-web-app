@@ -34,8 +34,8 @@ export class CalculationEngine {
    * @returns Área em pés quadrados
    */
   private static calculateSingleWallArea(measurements: Record<string, number>): number {
-    const widthA = measurements['width_a'] || 0;
-    const depthA = measurements['depth_a'] || 0;
+    const widthA = measurements['widthA'] || measurements['width_a'] || 0;
+    const depthA = measurements['depthA'] || measurements['depth_a'] || 0;
     
     // Converte de polegadas para pés quadrados
     // (Width A x Depth A) / 144 = pés quadrados
@@ -48,10 +48,10 @@ export class CalculationEngine {
    * @returns Área em pés quadrados
    */
   private static calculateLShapeArea(measurements: Record<string, number>): number {
-    const widthA = measurements['width_a'] || 0;
-    const depthA = measurements['depth_a'] || 0;
-    const widthB = measurements['width_b'] || 0;
-    const depthB = measurements['depth_b'] || 0;
+    const widthA = measurements['widthA'] || measurements['width_a'] || 0;
+    const depthA = measurements['depthA'] || measurements['depth_a'] || 0;
+    const widthB = measurements['widthB'] || measurements['width_b'] || 0;
+    const depthB = measurements['depthB'] || measurements['depth_b'] || 0;
     
     // Duas seções retangulares
     return ((widthA * depthA) + (widthB * depthB)) / 144;
@@ -63,10 +63,10 @@ export class CalculationEngine {
    * @returns Área em pés quadrados
    */
   private static calculateUShapeArea(measurements: Record<string, number>): number {
-    const widthA = measurements['width_a'] || 0;
-    const widthB = measurements['width_b'] || 0;
-    const widthC = measurements['width_c'] || 0;
-    const depth = measurements['depth_a'] || 0;
+    const widthA = measurements['widthA'] || measurements['width_a'] || 0;
+    const widthB = measurements['widthB'] || measurements['width_b'] || 0;
+    const widthC = measurements['widthC'] || measurements['width_c'] || 0;
+    const depth = measurements['depthA'] || measurements['depth_a'] || 0;
     
     // Três seções retangulares
     return ((widthA + widthB + widthC) * depth) / 144;
@@ -78,8 +78,8 @@ export class CalculationEngine {
    * @returns Área em pés quadrados
    */
   private static calculateIslandArea(measurements: Record<string, number>): number {
-    const widthA = measurements['width_a'] || 0;
-    const depthA = measurements['depth_a'] || 0;
+    const widthA = measurements['widthA'] || measurements['width_a'] || 0;
+    const depthA = measurements['depthA'] || measurements['depth_a'] || 0;
     
     // Seção retangular única
     return (widthA * depthA) / 144;
@@ -91,10 +91,10 @@ export class CalculationEngine {
    * @returns Área em pés quadrados
    */
   private static calculateLShapedIslandArea(measurements: Record<string, number>): number {
-    const widthA = measurements['width_a'] || 0;
-    const depthA = measurements['depth_a'] || 0;
-    const widthB = measurements['width_b'] || 0;
-    const depthB = measurements['depth_b'] || 0;
+    const widthA = measurements['widthA'] || measurements['width_a'] || 0;
+    const depthA = measurements['depthA'] || measurements['depth_a'] || 0;
+    const widthB = measurements['widthB'] || measurements['width_b'] || 0;
+    const depthB = measurements['depthB'] || measurements['depth_b'] || 0;
     
     // Duas seções retangulares (igual ao LShape)
     return ((widthA * depthA) + (widthB * depthB)) / 144;
@@ -106,13 +106,13 @@ export class CalculationEngine {
    * @returns Área em pés quadrados
    */
   private static calculateAngledShapeArea(measurements: Record<string, number>): number {
-    const widthA = measurements['width_a'] || 0;
-    const widthB = measurements['width_b'] || 0;
-    const widthC = measurements['width_c'] || 0;
-    const widthD = measurements['width_d'] || 0;
-    const depthA = measurements['depth_a'] || 0;
-    const depthB = measurements['depth_b'] || 0;
-    const depthC = measurements['depth_c'] || 0;
+    const widthA = measurements['widthA'] || measurements['width_a'] || 0;
+    const widthB = measurements['widthB'] || measurements['width_b'] || 0;
+    const widthC = measurements['widthC'] || measurements['width_c'] || 0;
+    const widthD = measurements['widthD'] || measurements['width_d'] || 0;
+    const depthA = measurements['depthA'] || measurements['depth_a'] || 0;
+    const depthB = measurements['depthB'] || measurements['depth_b'] || 0;
+    const depthC = measurements['depthC'] || measurements['depth_c'] || 0;
     
     // Soma de todas as seções
     const totalArea = (widthA * depthA) + (widthB * depthB) + (widthC * depthC) + (widthD * depthA);
@@ -125,12 +125,12 @@ export class CalculationEngine {
    * @returns Área em pés quadrados
    */
   private static calculateAngledShapeIslandArea(measurements: Record<string, number>): number {
-    const widthA = measurements['width_a'] || 0;
-    const widthB = measurements['width_b'] || 0;
-    const widthC = measurements['width_c'] || 0;
-    const depthA = measurements['depth_a'] || 0;
-    const depthB = measurements['depth_b'] || 0;
-    const depthC = measurements['depth_c'] || 0;
+    const widthA = measurements['widthA'] || measurements['width_a'] || 0;
+    const widthB = measurements['widthB'] || measurements['width_b'] || 0;
+    const widthC = measurements['widthC'] || measurements['width_c'] || 0;
+    const depthA = measurements['depthA'] || measurements['depth_a'] || 0;
+    const depthB = measurements['depthB'] || measurements['depth_b'] || 0;
+    const depthC = measurements['depthC'] || measurements['depth_c'] || 0;
     
     // Soma de todas as seções
     const totalArea = (widthA * depthA) + (widthB * depthB) + (widthC * depthC);
@@ -172,13 +172,19 @@ export class CalculationEngine {
    */
   private static applyLShapeSpecificRules(calculatedFields: Record<string, number>, measurements: Record<string, number>): void {
     // Regra para Width D: Width A - Depth B
-    if (measurements['width_a'] !== undefined && measurements['depth_b'] !== undefined) {
-      calculatedFields['width_d'] = measurements['width_a'] - measurements['depth_b'];
+    const widthA = measurements['widthA'] || measurements['width_a'];
+    const depthB = measurements['depthB'] || measurements['depth_b'];
+    if (widthA !== undefined && depthB !== undefined) {
+      calculatedFields['widthD'] = widthA - depthB;
+      calculatedFields['width_d'] = widthA - depthB; // Also set snake_case for compatibility
     }
     
     // Regra para Width C: Width B - Depth A
-    if (measurements['width_b'] !== undefined && measurements['depth_a'] !== undefined) {
-      calculatedFields['width_c'] = measurements['width_b'] - measurements['depth_a'];
+    const widthB = measurements['widthB'] || measurements['width_b'];
+    const depthA = measurements['depthA'] || measurements['depth_a'];
+    if (widthB !== undefined && depthA !== undefined) {
+      calculatedFields['widthC'] = widthB - depthA;
+      calculatedFields['width_c'] = widthB - depthA; // Also set snake_case for compatibility
     }
   }
 

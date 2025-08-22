@@ -9,6 +9,8 @@ import MeasurementsPage from '@/components/MeasurementsPage';
 import SpecificationPage from '@/components/SpecificationPage';
 import MaterialSelection from '@/components/MaterialSelection';
 import EdgeSelection from '@/components/EdgeSelection';
+import LeadInfoPage from '@/components/LeadInfoPage';
+import LeadAddressPage from '@/components/LeadAddressPage';
 import ProjectSummary from '@/components/ProjectSummary';
 
 export default function Home() {
@@ -43,6 +45,10 @@ export default function Home() {
       case 7:
         return <EdgeSelection />;
       case 8:
+        return <LeadInfoPage />;
+      case 9:
+        return <LeadAddressPage />;
+      case 10:
         return <ProjectSummary />;
       default:
         return <HomePage />;

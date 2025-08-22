@@ -1,0 +1,125 @@
+# Data Preloading System
+
+## Overview
+The Geffter web app implements a comprehensive **background data preloading system** that silently fetches all necessary data (layouts, materials, edge styles, measurement fields, SVG images) immediately when the homepage loads. This ensures a smooth, uninterrupted user journey without any visible loading delays or screens.
+
+## Architecture
+
+### Core Components
+
+#### 1. DataPreloader Service (`services/dataPreloader.ts`)
+- **Singleton Pattern**: Ensures only one instance manages preloaded data
+- **Caching**: Stores all fetched data in memory for instant access
+- **Parallel Loading**: Fetches all layout-specific data concurrently
+- **SVG Preloading**: Preloads all SVG images to prevent loading delays
+
+#### 2. Background Preloading Integration (`components/HomePage.tsx`)
+- **Silent Execution**: Starts preloading immediately on page load
+- **Callback System**: Automatically stores data when ready
+- **No User Interruption**: Completely invisible to users
+- **Immediate Navigation**: "Get Started" works instantly
+
+#### 3. Enhanced API Cache Hooks (`hooks/useApiCache.ts`)
+- **Preloaded Data Priority**: Uses preloaded data when available
+- **Fallback Mechanism**: Falls back to API calls if preloaded data unavailable
+- **Seamless Integration**: No changes needed in existing components
+
+### Data Flow
+
+```
+Homepage loads
+    ↓
+Background preloading starts immediately
+    ↓
+DataPreloader fetches silently:
+  - All layouts
+  - All materials  
+  - All edge styles
+  - Layout fields for each layout
+  - Auto-calculation rules for each layout
+  - Layout field groups for each layout
+  - SVG images for all layouts
+    ↓
+Data stored in Zustand store via callback
+    ↓
+User clicks "Get Started" → Immediate navigation
+    ↓
+All components use preloaded data instantly
+```
+
+## Implementation Details
+
+### Preloaded Data Structure
+```typescript
+interface PreloadedData {
+  layouts: Layout[];
+  materials: Material[];
+  edgeStyles: EdgeStyle[];
+  layoutFields: { [layoutId: string]: LayoutField[] };
+  autoCalculationRules: { [layoutId: string]: AutoCalculationRule[] };
+  layoutFieldGroups: { [layoutId: string]: any[] };
+}
+```
+
+### Background Loading Process
+1. **Silent Execution** - Starts immediately when homepage loads
+2. **Parallel Fetching** - All data fetched concurrently for speed
+3. **Callback Storage** - Data automatically stored when ready
+4. **No User Impact** - Completely invisible to users
+5. **Instant Navigation** - "Get Started" works immediately
+
+### Performance Benefits
+- **Zero Loading Delays**: All data available instantly during journey
+- **Reduced API Calls**: Single batch fetch instead of multiple requests
+- **Better UX**: Smooth transitions between steps
+- **Offline Capability**: Data persists in memory during session
+
+### Error Handling
+- **Graceful Degradation**: Falls back to individual API calls if preload fails
+- **User Feedback**: Clear error messages with retry options
+- **Logging**: Comprehensive console logging for debugging
+
+## Usage
+
+### For Developers
+The preloading system is transparent to existing components. All API cache hooks automatically use preloaded data when available:
+
+```typescript
+// This hook will use preloaded data if available
+const { data: layouts } = useLayouts();
+
+// This hook will use preloaded data if available  
+const { data: fields } = useLayoutFields(layoutId);
+```
+
+### For Users
+- Homepage loads and preloading starts silently in background
+- Click "Get Started" → Immediate navigation (no waiting)
+- Enjoy smooth, uninterrupted journey through all steps
+
+## Technical Considerations
+
+### Memory Management
+- Preloaded data stored in Zustand store with session persistence
+- Automatic cleanup when user starts new session
+- Efficient data structures to minimize memory footprint
+
+### Network Optimization
+- Parallel API requests for maximum speed
+- SVG preloading prevents layout shifts
+- Cached data reduces server load
+
+### Fallback Strategy
+- If preloading fails, app continues with individual API calls
+- No functionality lost if preloading system unavailable
+- Progressive enhancement approach
+
+## Future Enhancements
+- **Background Preloading**: Start preloading on page load
+- **Progressive Loading**: Load critical data first, then details
+- **Data Compression**: Optimize data transfer and storage
+- **Offline Support**: Cache data for offline usage
+description:
+globs:
+alwaysApply: false
+---

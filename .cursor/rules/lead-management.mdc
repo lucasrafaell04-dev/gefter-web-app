@@ -1,0 +1,115 @@
+# Lead Management System
+
+## Overview
+The lead management system handles user information collection through a two-step process before the final project summary. This system integrates with the database schema for leads and users.
+
+## Lead Insertion Flow
+
+### Step 8: LeadInfoPage
+- **File**: [components/LeadInfoPage.tsx](mdc:components/LeadInfoPage.tsx)
+- **Purpose**: Collect personal information
+- **Fields**:
+  - Full name (required)
+  - Email (required, validated)
+  - Confirm email (required, must match)
+  - Phone (required, validated)
+- **Validation**: Real-time validation with error messages
+- **Progress**: Shows "Info" step as active
+
+### Step 9: LeadAddressPage
+- **File**: [components/LeadAddressPage.tsx](mdc:components/LeadAddressPage.tsx)
+- **Purpose**: Collect address information
+- **Fields**:
+  - Street address (required)
+  - Zip code (required, format validated)
+  - City (dropdown, major US cities)
+  - State (dropdown, all US states)
+- **Progress**: Shows both "Info" and "Address" steps as completed
+
+## Data Structure
+
+### LeadInfo Interface
+```typescript
+interface LeadInfo {
+  fullName: string;
+  email: string;
+  confirmEmail: string;
+  phone: string;
+  streetAddress: string;
+  zipCode: string;
+  city: string;
+  state: string;
+}
+```
+
+### Database Integration
+- **Leads table**: Stores basic lead info (zipCode, city)
+- **Public_users table**: Stores detailed user info (full_name, email, phone, address)
+- **Relationship**: One-to-one between leads and users
+
+## State Management
+
+### Store Actions
+- `setLeadInfo(leadInfo: LeadInfo)` - Set complete lead data
+- `updateLeadInfo(updates: Partial<LeadInfo>)` - Update specific fields
+
+### Validation Rules
+- **Email**: Must be valid format and confirmed
+- **Phone**: Must be valid phone number format
+- **Zip Code**: Must be 5 digits or 5+4 format
+- **Required Fields**: All fields are mandatory
+
+## UI/UX Patterns
+
+### Form Design
+- **Icons**: Each field has a relevant icon (User, Mail, Phone, MapPin, Building2)
+- **Error States**: Red borders and error messages
+- **Progress Indicators**: Visual step completion
+- **Responsive**: Mobile-first design with Tailwind
+
+### Validation Feedback
+- **Real-time**: Errors clear as user types
+- **Visual**: Red borders for invalid fields
+- **Messages**: Clear, specific error descriptions
+- **Prevention**: Continue button disabled until valid
+
+## Integration Points
+
+### Project Summary
+- **File**: [components/ProjectSummary.tsx](mdc:components/ProjectSummary.tsx)
+- **Display**: Shows complete lead information
+- **Actions**: Includes lead data in quote generation
+
+### Database Schema
+- **Leads table**: [prisma/schema.prisma](mdc:prisma/schema.prisma) (lines 465-475)
+- **Public_users table**: [prisma/schema.prisma](mdc:prisma/schema.prisma) (lines 580-600)
+
+## Development Guidelines
+
+### Adding New Fields
+1. Update `LeadInfo` interface in [types/index.ts](mdc:types/index.ts)
+2. Add validation logic in component
+3. Update database schema if needed
+4. Test form submission flow
+
+### Validation Patterns
+```typescript
+// Email validation
+/^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+// Phone validation  
+/^[\+]?[1-9][\d]{0,15}$/
+
+// Zip code validation
+/^\d{5}(-\d{4})?$/
+```
+
+### Error Handling
+- Clear errors when user starts typing
+- Show specific validation messages
+- Prevent form submission with invalid data
+- Maintain user input during validation
+description:
+globs:
+alwaysApply: false
+---

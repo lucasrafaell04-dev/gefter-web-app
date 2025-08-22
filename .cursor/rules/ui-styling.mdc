@@ -1,0 +1,234 @@
+# UI Styling Guidelines
+
+## Input Field Standards
+
+### Text Color
+- **Always use `text-gray-900`** for input field text
+- **Never use white text** on white backgrounds
+- **Consistent across all forms**: Lead info, address, measurements, specifications
+
+### Input Field Classes
+```typescript
+// Standard input field styling
+className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+
+// With error state
+className={`block w-full pl-10 pr-3 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 ${
+  errors.fieldName ? 'border-red-500' : 'border-gray-300'
+}`}
+```
+
+### Select Dropdown Classes
+```typescript
+// Standard select styling
+className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+```
+
+## Form Design Patterns
+
+### Icon Integration
+- **Leading Icons**: Use `absolute inset-y-0 left-0 pl-3` positioning
+- **Icon Colors**: `text-gray-400` for default state
+- **Icon Sizes**: `h-5 w-5` for consistent sizing
+- **Common Icons**:
+  - `User` - Personal information
+  - `Mail` - Email fields
+  - `Phone` - Phone numbers
+  - `MapPin` - Address/location
+  - `Building2` - City/building
+  - `Info` - Information fields
+
+### Error Handling
+```typescript
+// Error display pattern
+{errors.fieldName && (
+  <p className="text-red-500 text-sm">{errors.fieldName}</p>
+)}
+
+// Error clearing on input
+onChange={(e) => {
+  handleInputChange('fieldName', e.target.value);
+  if (errors.fieldName) {
+    setErrors(prev => ({ ...prev, fieldName: '' }));
+  }
+}}
+```
+
+### Validation Patterns
+```typescript
+// Email validation
+/^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+// Phone validation
+/^[\+]?[1-9][\d]{0,15}$/
+
+// Zip code validation
+/^\d{5}(-\d{4})?$/
+
+// Required field validation
+if (!value?.trim()) {
+  newErrors.fieldName = 'Field is required';
+}
+```
+
+## Progress Indicators
+
+### Step Progress
+```typescript
+// Two-step progress (Info/Address)
+<div className="flex items-center justify-center space-x-4 mb-4">
+  <div className="flex items-center">
+    <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+      <div className="w-2 h-2 bg-white rounded-full"></div>
+    </div>
+    <span className="ml-2 text-sm font-medium text-green-600">Info</span>
+  </div>
+  <div className="flex-1 h-px bg-gray-300"></div>
+  <div className="flex items-center">
+    <div className="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center">
+      <div className="w-2 h-2 bg-white rounded-full"></div>
+    </div>
+    <span className="ml-2 text-sm font-medium text-gray-500">Address</span>
+  </div>
+</div>
+```
+
+### Shape Progress
+```typescript
+// Multi-shape progress
+<div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+  <span>Shape {currentShapeIndex + 1} of {selectedShapes.length}</span>
+  <span>{currentShape.layout.name}</span>
+</div>
+<div className="w-full bg-gray-200 rounded-full h-2">
+  <div 
+    className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+    style={{ width: `${((currentShapeIndex + 1) / selectedShapes.length) * 100}%` }}
+  />
+</div>
+```
+
+## Button Styling
+
+### Primary Buttons
+```typescript
+// Enabled state
+className="w-full py-4 px-6 rounded-xl font-semibold text-lg transition-colors bg-gray-800 hover:bg-gray-900 text-white"
+
+// Disabled state
+className="w-full py-4 px-6 rounded-xl font-semibold text-lg transition-colors bg-gray-300 text-gray-500 cursor-not-allowed"
+```
+
+### Secondary Buttons
+```typescript
+// Action buttons
+className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+```
+
+## Layout Patterns
+
+### Form Container
+```typescript
+// Standard form layout
+<div className="max-w-md mx-auto space-y-6">
+  {/* Form fields */}
+</div>
+```
+
+### Card Layout
+```typescript
+// White card with shadow
+<div className="bg-white rounded-xl p-6 shadow-sm">
+  {/* Content */}
+</div>
+```
+
+### Fixed Bottom Bar
+```typescript
+// Fixed bottom with button
+<div className="fixed bottom-0 left-0 right-0 bg-white border-t">
+  <div className="max-w-4xl mx-auto px-4 py-4">
+    {/* Button */}
+  </div>
+</div>
+```
+
+## Responsive Design
+
+### Mobile-First Approach
+- **Base styles**: Mobile-first
+- **Breakpoints**: `md:` for desktop (768px+)
+- **Container**: `max-w-4xl mx-auto px-4`
+
+### Responsive Text
+```typescript
+// Responsive headings
+className="text-2xl md:text-3xl font-bold text-gray-800"
+
+// Responsive buttons
+className="w-7 h-7 md:w-8 md:h-8"
+```
+
+## Animation Patterns
+
+### Framer Motion
+```typescript
+// Fade in with delay
+<motion.div
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.5, delay: 0.1 }}
+>
+
+// Expand/collapse
+<motion.div
+  initial={{ opacity: 0, height: 0 }}
+  animate={{ opacity: 1, height: 'auto' }}
+  exit={{ opacity: 0, height: 0 }}
+>
+```
+
+## Loading States
+
+### Spinner Pattern
+```typescript
+<div className="flex items-center justify-center py-12">
+  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+  <span className="ml-3 text-gray-600">Loading...</span>
+</div>
+```
+
+### Error States
+```typescript
+<div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+  <p className="text-red-800">Error message</p>
+  <button className="mt-2 text-red-600 hover:text-red-800 underline">
+    Try again
+  </button>
+</div>
+```
+
+## Development Guidelines
+
+### Adding New Forms
+1. Use consistent input field styling with `text-gray-900`
+2. Include appropriate icons for each field
+3. Implement real-time validation with error clearing
+4. Add proper loading and error states
+5. Test responsive behavior on mobile and desktop
+
+### Form Validation
+1. Clear errors when user starts typing
+2. Show specific validation messages
+3. Prevent form submission with invalid data
+4. Maintain user input during validation
+
+### Accessibility
+1. Use proper labels for all form fields
+2. Include ARIA attributes where needed
+3. Ensure keyboard navigation works
+4. Test with screen readers
+description:
+globs:
+alwaysApply: false
+---

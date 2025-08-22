@@ -14,7 +14,7 @@ import Image from 'next/image';
 
 
 // Dynamic SVG component that loads base SVG from database and overlays dynamic labels
-const DynamicSvgDiagram = React.memo(({ 
+export const DynamicSvgDiagram = React.memo(({ 
   layoutName, 
   layoutImage,
   manualFields, 
@@ -242,7 +242,7 @@ const MeasurementInput = React.memo(({
             onChange(numValue);
             setDisplayValue(numValue > 0 ? numValue.toString() : '');
           }}
-          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
           placeholder={`Enter ${field.field_label.toLowerCase()}`}
         />
         <span className="text-sm text-gray-500 w-12">in</span>
@@ -288,13 +288,19 @@ export default function MeasurementsPage() {
     // Apply L-Shape specific rules for LShape and L-Shaped-Island
     if (currentShape.layout.name === 'LShape' || currentShape.layout.name === 'L-Shaped-Island') {
       // Width D = Width A - Depth B
-      if (allMeasurements['width_a'] !== undefined && allMeasurements['depth_b'] !== undefined) {
-        allMeasurements['width_d'] = allMeasurements['width_a'] - allMeasurements['depth_b'];
+      const widthA = allMeasurements['widthA'] || allMeasurements['width_a'];
+      const depthB = allMeasurements['depthB'] || allMeasurements['depth_b'];
+      if (widthA !== undefined && depthB !== undefined) {
+        allMeasurements['widthD'] = widthA - depthB;
+        allMeasurements['width_d'] = widthA - depthB; // Also set snake_case for compatibility
       }
       
       // Width C = Width B - Depth A
-      if (allMeasurements['width_b'] !== undefined && allMeasurements['depth_a'] !== undefined) {
-        allMeasurements['width_c'] = allMeasurements['width_b'] - allMeasurements['depth_a'];
+      const widthB = allMeasurements['widthB'] || allMeasurements['width_b'];
+      const depthA = allMeasurements['depthA'] || allMeasurements['depth_a'];
+      if (widthB !== undefined && depthA !== undefined) {
+        allMeasurements['widthC'] = widthB - depthA;
+        allMeasurements['width_c'] = widthB - depthA; // Also set snake_case for compatibility
       }
     }
     
@@ -655,7 +661,7 @@ export default function MeasurementsPage() {
                   max="24"
                   value={currentShape.backsplashHeight || 4}
                   onChange={(e) => setShapeBacksplash(currentShapeIndex, true, parseFloat(e.target.value) || 4)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                   placeholder="4"
                 />
               </div>

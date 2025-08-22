@@ -1,0 +1,183 @@
+# Specification System
+
+## Overview
+The specification system allows users to customize their countertop installation with additional options like cutouts, sinks, and cabinet preferences. This step appears after measurements for each shape.
+
+## Specification Flow
+
+### Step 5: SpecificationPage
+- **File**: [components/SpecificationPage.tsx](mdc:components/SpecificationPage.tsx)
+- **Purpose**: Collect installation specifications for each shape
+- **Multi-shape Support**: Each shape gets individual specification form
+- **Progressive Flow**: Complete one shape before moving to next
+
+## Specification Fields
+
+### Basic Questions
+1. **Keep Current Cabinets**: Yes/No dropdown
+2. **Countertop to Remove**: Dropdown with options (Granite, Marble, Quartz, etc.)
+3. **Holes or Cuts**: Yes/No dropdown (triggers cutout options)
+
+### Conditional Cutout Options
+- **Trigger**: Only shown when "Holes or Cuts" is "Yes"
+- **Faucet Cutout**: Quantity selector with image
+- **Cooktop Cutout**: Quantity selector with image
+- **Dynamic Pricing**: Cutouts add to total cost
+
+### Sink Selection
+- **Free Stainless Steel Sink**: Quantity selector
+- **Included Items**: Some sinks are included at no cost
+- **Additional Pricing**: Extra sinks add to total cost
+
+## Data Structure
+
+### ShapeSpecification Interface
+```typescript
+interface ShapeSpecification {
+  keepCurrentCabinets?: 'yes' | 'no';
+  countertopToRemove?: string;
+  hasHolesOrCuts?: 'yes' | 'no';
+  cutouts?: {
+    [cutoutId: string]: number; // cutoutId -> quantity
+  };
+  sinks?: {
+    [sinkId: string]: number; // sinkId -> quantity
+  };
+}
+```
+
+### CutoutOption Interface
+```typescript
+interface CutoutOption {
+  id: string;
+  name: string;
+  description: string;
+  image: string;
+  included: boolean;
+  price?: number;
+}
+```
+
+### SinkOption Interface
+```typescript
+interface SinkOption {
+  id: string;
+  name: string;
+  description: string;
+  image: string;
+  price: number;
+  included: boolean;
+}
+```
+
+## State Management
+
+### Store Actions
+- `updateShapeSpecification(shapeIndex, specification)` - Update specification data
+- `updateShapeCutoutQuantity(shapeIndex, cutoutId, quantity)` - Update cutout quantities
+- `updateShapeSinkQuantity(shapeIndex, sinkId, quantity)` - Update sink quantities
+
+### Data Persistence
+- **Session Storage**: All specification data persists across browser sessions
+- **Shape-specific**: Each shape maintains its own specification data
+- **Validation**: Required fields must be completed before proceeding
+
+## UI/UX Patterns
+
+### Form Design
+- **Conditional Display**: Cutout options only show when relevant
+- **Quantity Selectors**: Plus/minus buttons for numerical inputs
+- **Visual Feedback**: Images for cutouts and sinks
+- **Progress Tracking**: Shows current shape vs total shapes
+
+### Validation
+- **Required Fields**: Basic questions must be answered
+- **Conditional Logic**: Cutout options depend on "holes or cuts" answer
+- **Continue Button**: Only enabled when current shape is complete
+
+## Pricing Integration
+
+### Cost Calculation
+- **Cutout Costs**: $50 per cutout (placeholder pricing)
+- **Sink Costs**: $200 per sink (placeholder pricing)
+- **Included Items**: Some cutouts/sinks are free
+- **Total Impact**: Added to material and edge costs
+
+### Price Updates
+- **Real-time**: Prices update as specifications change
+- **Per Shape**: Each shape's specifications affect total
+- **Project Summary**: Shows complete cost breakdown
+
+## Mock Data
+
+### Cutout Options
+```typescript
+const CUTOUT_OPTIONS = [
+  {
+    id: 'faucet-cutout',
+    name: 'Faucet cutout',
+    description: 'Standard faucet cutout for kitchen sink',
+    image: '/assets/images/1-cutout-sink.jpg',
+    included: true,
+    price: 0
+  },
+  {
+    id: 'cooktop-cutout',
+    name: 'Cooktop - 1 included',
+    description: 'Standard cooktop cutout',
+    image: '/assets/images/cooktop-cutout.jpg',
+    included: true,
+    price: 0
+  }
+];
+```
+
+### Sink Options
+```typescript
+const SINK_OPTIONS = [
+  {
+    id: 'free-stainless-sink',
+    name: 'Free Stainless Steel Sink',
+    description: 'High-quality stainless steel sink included',
+    image: '/assets/images/1-cutout-sink.jpg',
+    price: 0,
+    included: true
+  }
+];
+```
+
+## Integration Points
+
+### Measurements Page
+- **Precedes**: Specification step comes after measurements
+- **Data Flow**: Measurements data available for specification decisions
+- **Validation**: Measurements must be complete before specification
+
+### Material Selection
+- **Follows**: Specification step comes before material selection
+- **Pricing**: Specification costs included in total pricing
+- **Data Flow**: Specification data available for quote generation
+
+## Development Guidelines
+
+### Adding New Cutout Types
+1. Add to `CUTOUT_OPTIONS` array in component
+2. Update pricing calculation in store
+3. Add corresponding images to assets
+4. Test conditional display logic
+
+### Adding New Sink Types
+1. Add to `SINK_OPTIONS` array in component
+2. Update pricing calculation in store
+3. Add corresponding images to assets
+4. Test quantity selection logic
+
+### Database Integration
+- **Future**: Cutout and sink options should come from database
+- **Pricing**: Dynamic pricing based on database values
+- **Images**: Dynamic image loading from database URLs
+- **Availability**: Real-time availability checking
+description:
+globs:
+alwaysApply: false
+---

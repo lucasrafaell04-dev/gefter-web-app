@@ -11,14 +11,17 @@ Aplicação web para cotação de bancadas de cozinha/banheiro com fluxo de 6 st
 - **UI**: Tailwind CSS + Framer Motion
 - **Tipagem**: TypeScript
 
-## Fluxo de Navegação
+## Fluxo de Navegação (10 Steps)
 1. **HomePage** (Step 1) - Tela inicial com imagens aleatórias
-2. **RoomSelection** (Step 2 of 6) - Kitchen/Bathroom
-3. **LayoutSelection** (Step 3 of 6) - Formas de cozinha
-4. **MeasurementsPage** (Step 4 of 6) - Medidas das formas
-5. **MaterialSelection** (Step 5 of 6) - Materiais disponíveis
-6. **EdgeSelection** (Step 6 of 6) - Estilos de borda
-7. **ProjectSummary** - Resumo final com preços
+2. **RoomSelection** (Step 2 of 10) - Kitchen/Bathroom
+3. **LayoutSelection** (Step 3 of 10) - Formas de cozinha
+4. **MeasurementsPage** (Step 4 of 10) - Medidas das formas
+5. **SpecificationPage** (Step 5 of 10) - Especificações de instalação
+6. **MaterialSelection** (Step 6 of 10) - Materiais disponíveis
+7. **EdgeSelection** (Step 7 of 10) - Estilos de borda
+8. **LeadInfoPage** (Step 8 of 10) - Informações pessoais
+9. **LeadAddressPage** (Step 9 of 10) - Informações de endereço
+10. **ProjectSummary** (Step 10 of 10) - Resumo final com preços
 
 ## Componentes Principais
 - [app/page.tsx](mdc:app/page.tsx) - Roteamento principal

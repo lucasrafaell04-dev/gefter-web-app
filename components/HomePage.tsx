@@ -4,9 +4,10 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Star } from 'lucide-react';
 import { useProjectStore } from '@/store/useProjectStore';
 import { useState, useEffect } from 'react';
+import { dataPreloader } from '@/services/dataPreloader';
 
 export default function HomePage() {
-  const { setSelectedRoom, nextStep } = useProjectStore();
+  const { setSelectedRoom, nextStep, setPreloadedData } = useProjectStore();
   const [backgroundImage, setBackgroundImage] = useState('');
 
   // Array of background images
@@ -16,13 +17,33 @@ export default function HomePage() {
     '/assets/images/ic2rl_7.jpg',
   ];
 
-  // Set random background image on component mount
+  // Set random background image and start background preloading on component mount
   useEffect(() => {
     const randomImage = backgroundImages[Math.floor(Math.random() * backgroundImages.length)];
     setBackgroundImage(randomImage);
-  }, []);
+    
+    // Set up callback to store data when ready
+    dataPreloader.setOnDataReadyCallback((data) => {
+      setPreloadedData(data);
+      console.log('✅ Background preload completed and stored');
+    });
+    
+    // Start preloading data in background immediately
+    const startBackgroundPreload = async () => {
+      try {
+        await dataPreloader.preloadAllData();
+      } catch (error) {
+        console.error('❌ Background preload failed:', error);
+        // Silent failure - app will use individual API calls as fallback
+      }
+    };
+    
+    startBackgroundPreload();
+  }, [setPreloadedData]);
 
   const handleGetStarted = () => {
+    // Data is already being preloaded in background
+    // Just proceed to next step immediately
     setSelectedRoom('kitchen'); // Default to kitchen
     nextStep();
   };

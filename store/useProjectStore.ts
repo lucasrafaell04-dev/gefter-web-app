@@ -1,9 +1,14 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { ProjectState, SelectedShape, Material, EdgeStyle, RoomType, ShapeSpecification } from '@/types';
+import { ProjectState, SelectedShape, Material, EdgeStyle, RoomType, ShapeSpecification, LeadInfo } from '@/types';
+import { PreloadedData } from '@/services/dataPreloader';
 
 interface ProjectStore extends ProjectState {
+  // Preloaded data
+  preloadedData: PreloadedData | null;
+  
   // Actions
+  setPreloadedData: (data: PreloadedData) => void;
   setSelectedRoom: (room: RoomType) => void;
   addSelectedShape: (shape: SelectedShape) => void;
   removeSelectedShape: (index: number) => void;
@@ -15,6 +20,8 @@ interface ProjectStore extends ProjectState {
   updateShapeSinkQuantity: (shapeIndex: number, sinkId: string, quantity: number) => void;
   setSelectedMaterial: (material: Material) => void;
   setSelectedEdgeStyle: (edgeStyle: EdgeStyle) => void;
+  setLeadInfo: (leadInfo: LeadInfo) => void;
+  updateLeadInfo: (updates: Partial<LeadInfo>) => void;
   setCurrentStep: (step: number) => void;
   nextStep: () => void;
   previousStep: () => void;
@@ -27,14 +34,18 @@ const initialState: ProjectState = {
   selectedShapes: [],
   selectedMaterial: null,
   selectedEdgeStyle: null,
+  leadInfo: null,
   currentStep: 1,
-  totalSteps: 8, // Updated to include specification step
+  totalSteps: 10, // Updated to include lead insertion steps
 };
 
 export const useProjectStore = create<ProjectStore>()(
   persist(
     (set, get) => ({
       ...initialState,
+      preloadedData: null,
+
+      setPreloadedData: (data) => set({ preloadedData: data }),
 
       setSelectedRoom: (room) => set({ selectedRoom: room }),
 
@@ -165,6 +176,13 @@ export const useProjectStore = create<ProjectStore>()(
       setSelectedMaterial: (material) => set({ selectedMaterial: material }),
 
       setSelectedEdgeStyle: (edgeStyle) => set({ selectedEdgeStyle: edgeStyle }),
+
+      setLeadInfo: (leadInfo) => set({ leadInfo }),
+
+      updateLeadInfo: (updates) =>
+        set((state) => ({
+          leadInfo: state.leadInfo ? { ...state.leadInfo, ...updates } : updates as LeadInfo
+        })),
 
       setCurrentStep: (step) => set({ currentStep: step }),
 

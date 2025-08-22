@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiService } from '@/services/apiService';
 import { Layout, Material, EdgeStyle, LayoutField, AutoCalculationRule, LayoutFieldGroup } from '@/types';
+import { dataPreloader } from '@/services/dataPreloader';
 
 // Query Keys para organização do cache
 export const queryKeys = {
@@ -16,7 +17,15 @@ export const queryKeys = {
 export function useLayouts() {
   return useQuery({
     queryKey: queryKeys.layouts,
-    queryFn: apiService.getLayouts,
+    queryFn: async () => {
+      // Check if data is preloaded
+      const preloadedData = dataPreloader.getPreloadedData();
+      if (preloadedData) {
+        return preloadedData.layouts;
+      }
+      // Fallback to API call
+      return apiService.getLayouts();
+    },
     staleTime: 1000 * 60 * 60, // 1 hora
     gcTime: 1000 * 60 * 60 * 24, // 24 horas
   });
@@ -26,7 +35,15 @@ export function useLayouts() {
 export function useMaterials() {
   return useQuery({
     queryKey: queryKeys.materials,
-    queryFn: apiService.getMaterials,
+    queryFn: async () => {
+      // Check if data is preloaded
+      const preloadedData = dataPreloader.getPreloadedData();
+      if (preloadedData) {
+        return preloadedData.materials;
+      }
+      // Fallback to API call
+      return apiService.getMaterials();
+    },
     staleTime: 1000 * 60 * 60 * 2, // 2 horas (materiais mudam menos)
     gcTime: 1000 * 60 * 60 * 24, // 24 horas
   });
@@ -36,7 +53,15 @@ export function useMaterials() {
 export function useEdgeStyles() {
   return useQuery({
     queryKey: queryKeys.edgeStyles,
-    queryFn: apiService.getEdgeStyles,
+    queryFn: async () => {
+      // Check if data is preloaded
+      const preloadedData = dataPreloader.getPreloadedData();
+      if (preloadedData) {
+        return preloadedData.edgeStyles;
+      }
+      // Fallback to API call
+      return apiService.getEdgeStyles();
+    },
     staleTime: 1000 * 60 * 60 * 2, // 2 horas
     gcTime: 1000 * 60 * 60 * 24, // 24 horas
   });
@@ -46,7 +71,15 @@ export function useEdgeStyles() {
 export function useLayoutFields(layoutId: string) {
   return useQuery({
     queryKey: queryKeys.layoutFields(layoutId),
-    queryFn: () => apiService.getLayoutFields(layoutId),
+    queryFn: async () => {
+      // Check if data is preloaded
+      const preloadedData = dataPreloader.getPreloadedData();
+      if (preloadedData && preloadedData.layoutFields[layoutId]) {
+        return preloadedData.layoutFields[layoutId];
+      }
+      // Fallback to API call
+      return apiService.getLayoutFields(layoutId);
+    },
     staleTime: 1000 * 60 * 60, // 1 hora
     gcTime: 1000 * 60 * 60 * 24, // 24 horas
     enabled: !!layoutId, // Só executa se layoutId existir
@@ -57,7 +90,15 @@ export function useLayoutFields(layoutId: string) {
 export function useAutoCalculationRules(layoutId: string) {
   return useQuery({
     queryKey: queryKeys.autoCalculationRules(layoutId),
-    queryFn: () => apiService.getAutoCalculationRules(layoutId),
+    queryFn: async () => {
+      // Check if data is preloaded
+      const preloadedData = dataPreloader.getPreloadedData();
+      if (preloadedData && preloadedData.autoCalculationRules[layoutId]) {
+        return preloadedData.autoCalculationRules[layoutId];
+      }
+      // Fallback to API call
+      return apiService.getAutoCalculationRules(layoutId);
+    },
     staleTime: 1000 * 60 * 60, // 1 hora
     gcTime: 1000 * 60 * 60 * 24, // 24 horas
     enabled: !!layoutId,
@@ -68,7 +109,15 @@ export function useAutoCalculationRules(layoutId: string) {
 export function useLayoutFieldGroups(layoutId: string) {
   return useQuery({
     queryKey: queryKeys.layoutFieldGroups(layoutId),
-    queryFn: () => apiService.getLayoutFieldGroups(layoutId),
+    queryFn: async () => {
+      // Check if data is preloaded
+      const preloadedData = dataPreloader.getPreloadedData();
+      if (preloadedData && preloadedData.layoutFieldGroups[layoutId]) {
+        return preloadedData.layoutFieldGroups[layoutId];
+      }
+      // Fallback to API call
+      return apiService.getLayoutFieldGroups(layoutId);
+    },
     staleTime: 1000 * 60 * 60, // 1 hora
     gcTime: 1000 * 60 * 60 * 24, // 24 horas
     enabled: !!layoutId,
