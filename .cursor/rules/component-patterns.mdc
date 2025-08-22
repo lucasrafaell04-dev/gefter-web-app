@@ -1,0 +1,95 @@
+# React Component Patterns
+
+## Component Structure
+All components follow a consistent pattern:
+- **Client Components**: Use `'use client'` directive
+- **State Management**: Use Zustand store hooks
+- **Styling**: Tailwind CSS classes
+- **Animations**: Framer Motion for transitions
+
+## Step Components
+Each step in the workflow is a separate component:
+- [components/HomePage.tsx](mdc:components/HomePage.tsx) - Landing page with background preloading
+- [components/RoomSelection.tsx](mdc:components/RoomSelection.tsx) - Room type selection
+- [components/LayoutSelection.tsx](mdc:components/LayoutSelection.tsx) - Layout shape selection
+- [components/MeasurementsPage.tsx](mdc:components/MeasurementsPage.tsx) - Measurement input
+- [components/SpecificationPage.tsx](mdc:components/SpecificationPage.tsx) - Cutout and sink specifications
+- [components/MaterialSelection.tsx](mdc:components/MaterialSelection.tsx) - Material selection
+- [components/EdgeSelection.tsx](mdc:components/EdgeSelection.tsx) - Edge style selection
+- [components/LeadInfoPage.tsx](mdc:components/LeadInfoPage.tsx) - User information
+- [components/LeadAddressPage.tsx](mdc:components/LeadAddressPage.tsx) - User address
+- [components/ProjectSummary.tsx](mdc:components/ProjectSummary.tsx) - Final summary
+
+## Common Patterns
+
+### State Management
+```typescript
+const { selectedShapes, addSelectedShape, nextStep } = useProjectStore();
+```
+
+### Form Validation
+```typescript
+const [errors, setErrors] = useState<Record<string, string>>({});
+
+const validateForm = () => {
+  const newErrors: Record<string, string> = {};
+  // Validation logic
+  setErrors(newErrors);
+  return Object.keys(newErrors).length === 0;
+};
+```
+
+### Navigation
+```typescript
+const handleContinue = () => {
+  if (validateForm()) {
+    nextStep();
+  }
+};
+
+const handlePrevious = () => {
+  previousStep();
+};
+```
+
+### Dynamic SVG Diagrams
+```typescript
+// Used in MeasurementsPage and SpecificationPage
+const DynamicSvgDiagram = React.memo(({ 
+  layoutName, 
+  layoutImage,
+  manualFields, 
+  measurements,
+  autoCalculatedFields 
+}) => {
+  // SVG rendering logic
+});
+```
+
+## Styling Patterns
+- **Responsive Design**: Mobile-first with Tailwind breakpoints
+- **Consistent Spacing**: Use Tailwind spacing scale
+- **Color Scheme**: Gray scale with blue accents
+- **Animations**: Framer Motion for smooth transitions
+
+## Form Patterns
+- **Input Fields**: Consistent styling with `text-gray-900`
+- **Validation**: Real-time validation with error messages
+- **Step Indicators**: Show current step and total steps
+- **Progress Bars**: Visual progress through workflow
+
+## Performance Optimizations
+- **React.memo**: For expensive components
+- **useCallback**: For event handlers
+- **useMemo**: For expensive calculations
+- **Conditional Rendering**: Only render when needed
+
+## Error Handling
+- **Graceful Degradation**: Fallback UI for errors
+- **Loading States**: Show loading indicators
+- **Error Boundaries**: Catch and handle errors
+- **User Feedback**: Clear error messages
+description:
+globs:
+alwaysApply: false
+---

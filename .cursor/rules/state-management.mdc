@@ -1,36 +1,67 @@
-# Gerenciamento de Estado - Zustand Store
+# State Management with Zustand
 
-## Store Principal
-[store/useProjectStore.ts](mdc:store/useProjectStore.ts) - Estado global da aplicação
+## Store Structure
+The main store is defined in [store/useProjectStore.ts](mdc:store/useProjectStore.ts) and manages the entire application state.
 
-### Estado Inicial
+## Core State Properties
 ```typescript
-const initialState: ProjectState = {
-  selectedRoom: null,           // Tipo de cômodo (kitchen/bathroom)
-  selectedShapes: [],           // Formas selecionadas com medidas
-  selectedMaterial: null,       // Material escolhido
-  selectedEdgeStyle: null,      // Estilo de borda escolhido
-  currentStep: 1,              // Step atual (1-6)
-  totalSteps: 6,               // Total de steps
-};
+interface ProjectState {
+  selectedRoom: RoomType | null;
+  selectedShapes: SelectedShape[];
+  selectedMaterial: Material | null;
+  selectedEdgeStyle: EdgeStyle | null;
+  leadInfo: LeadInfo | null;
+  preloadedData: PreloadedData | null;
+  currentStep: number;
+  totalSteps: number;
+}
 ```
 
-### Ações Principais
-- `setSelectedRoom(room)` - Define cômodo selecionado
-- `addSelectedShape(shape)` - Adiciona forma com medidas
-- `removeSelectedShape(index)` - Remove forma por índice
-- `updateShapeMeasurements(shapeIndex, measurements)` - Atualiza medidas
-- `setSelectedMaterial(material)` - Define material
-- `setSelectedEdgeStyle(edgeStyle)` - Define estilo de borda
-- `nextStep()` / `previousStep()` - Navegação entre steps
-- `calculateTotalPrice()` - Calcula preço total
+## Key Actions
+- **Navigation**: `nextStep()`, `previousStep()`, `setCurrentStep(step)`
+- **Shape Management**: `addSelectedShape()`, `removeSelectedShape()`, `updateShapeMeasurements()`
+- **Specifications**: `updateShapeSpecification()`, `updateShapeCutoutQuantity()`, `updateShapeSinkQuantity()`
+- **Lead Data**: `setLeadInfo()`, `updateLeadInfo()`
+- **Data Preloading**: `setPreloadedData()`
 
-### Persistência
-- **Storage**: sessionStorage (limpa ao fechar aba)
-- **Middleware**: Zustand persist
-- **Nome**: 'gefter-project-storage'
+## Usage Patterns
+```typescript
+// In components
+const { selectedShapes, addSelectedShape, nextStep } = useProjectStore();
 
-### Otimizações
-- Subscrições seletivas para evitar re-renders desnecessários
-- Atualizações condicionais (só atualiza se dados mudaram)
-- Estado imutável com spread operator
+// Update shape measurements
+updateShapeMeasurements(shapeIndex, { widthA: 120, depthA: 30 });
+
+// Update specifications
+updateShapeSpecification(shapeIndex, { 
+  keepCurrentCabinets: 'yes',
+  hasHolesOrCuts: 'yes' 
+});
+```
+
+## Persistence
+- Store uses Zustand's `persist` middleware
+- Data persists in `sessionStorage` during browser session
+- Automatic state restoration on page reload
+
+## Performance Optimizations
+- **Selective Updates**: Only update state when values actually change
+- **Immutable Updates**: Always create new objects/arrays when updating
+- **Batch Updates**: Group related state changes together
+
+## Shape Data Structure
+```typescript
+interface SelectedShape {
+  layout: Layout;
+  measurements: Record<string, number>;
+  wallToggles: Record<string, boolean>;
+  hasBacksplash: boolean;
+  backsplashHeight?: number;
+  specification?: ShapeSpecification;
+}
+```
+
+## Validation Patterns
+- Always validate data before updating state
+- Use TypeScript for compile-time type safety
+- Implement runtime validation for user inputs

@@ -1,0 +1,115 @@
+# Calculation Engine
+
+## Overview
+The calculation engine handles area calculations, auto-calculated fields, and pricing for kitchen countertops. Located in [utils/calculations.ts](mdc:utils/calculations.ts).
+
+## Core Functions
+
+### Area Calculations
+```typescript
+// Calculate square feet for different layouts
+calculateSingleWallArea(measurements: Record<string, number>): number
+calculateLShapeArea(measurements: Record<string, number>): number
+calculateUShapeArea(measurements: Record<string, number>): number
+calculateIslandArea(measurements: Record<string, number>): number
+```
+
+### Auto-Calculated Fields
+```typescript
+// Apply auto-calculation rules including layout-specific rules
+calculateAutoFields(
+  rules: AutoCalculationRule[],
+  measurements: Record<string, number>,
+  layoutName?: string
+): Record<string, number>
+```
+
+### Layout-Specific Rules (AutoCalculationRules Class)
+```typescript
+// Apply layout-specific auto-calculation rules
+AutoCalculationRules.applyLayoutSpecificRules(
+  layoutName: string,
+  calculatedFields: Record<string, number>,
+  measurements: Record<string, number>
+): void
+```
+
+## Field Name Compatibility
+The engine handles both `camelCase` and `snake_case` field names:
+```typescript
+// Example: Check both naming conventions
+const widthA = measurements['widthA'] || measurements['width_a'] || 0;
+const depthA = measurements['depthA'] || measurements['depth_a'] || 0;
+```
+
+## Layout-Specific Calculations
+
+### SingleWall
+- **Formula**: `(widthA * depthA) / 144`
+- **Fields**: `widthA`, `depthA` (or `width_a`, `depth_a`)
+
+### LShape
+- **Formula**: `((widthA * depthA) + (widthB * depthB)) / 144`
+- **Auto-calculated**: `widthC = widthB - depthA`, `widthD = widthA - depthB`, `depthB = widthB - widthE`
+
+### UShape
+- **Formula**: `((depthB * widthE) + (depthA * widthD) + (widthA * depthC)) / 144`
+- **Auto-calculated**: `widthD = widthC - depthC`, `widthE = widthB - depthC`
+
+### Island
+- **Formula**: `(widthA * depthA) / 144`
+
+### Island Layouts (L-Shaped-Island, Angled-shaped-Island)
+- **Detection**: Automatically detected by layout name containing "Island" or "sink"
+- **Main Area**: Calculated using the base layout formula (LShape, Angled-shape, etc.)
+- **Sink Area**: `(sinkWidthA * sinkDepthA) / 144`
+- **Total Formula**: `Main Area + Sink Area`
+- **Example**: L-Shaped-Island = LShape area + Sink area
+
+## Architecture
+
+### Calculation Engine ([utils/calculations.ts](mdc:utils/calculations.ts))
+- **Area Calculations**: Square feet calculations for different layouts
+- **Database Rules**: Processes auto-calculation rules from database
+- **Formula Evaluation**: Safe evaluation of mathematical formulas
+
+### Auto Calculation Rules ([utils/autoCalculationRules.ts](mdc:utils/autoCalculationRules.ts))
+- **Layout-Specific Logic**: Dedicated class for layout-specific calculations
+- **Field Name Compatibility**: Handles both camelCase and snake_case
+- **Extensible Design**: Easy to add new layout rules
+
+## Integration with Components
+Used in [components/MeasurementsPage.tsx](mdc:components/MeasurementsPage.tsx):
+```typescript
+// Apply calculations when measurements change
+const handleMeasurementChange = useCallback((fieldName: string, value: number) => {
+  const newMeasurements = { ...currentShape.measurements, [fieldName]: value };
+  
+  // Apply auto-calculation rules including layout-specific rules
+  const calculatedValues = calculateAutoFields(autoCalculationRules, newMeasurements, currentShape.layout.name);
+  const allMeasurements = { ...newMeasurements, ...calculatedValues };
+  
+  // Update state with calculated values
+  updateShapeMeasurements(currentShapeIndex, allMeasurements);
+}, [currentShape.measurements, autoCalculationRules, currentShapeIndex, updateShapeMeasurements]);
+```
+
+## Error Handling
+- **Default Values**: Return 0 for missing measurements
+- **Validation**: Check for valid numeric values
+- **Fallback**: Handle both field naming conventions
+
+## Performance Considerations
+- **Memoization**: Cache calculation results
+- **Batch Updates**: Apply multiple calculations at once
+- **Efficient Formulas**: Optimized mathematical operations
+
+## Testing
+- Test with various measurement combinations
+- Verify field name compatibility
+- Validate calculation accuracy
+- Test edge cases and error conditions
+description:
+globs:
+alwaysApply: false
+---

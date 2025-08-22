@@ -1,0 +1,216 @@
+# Performance Optimization
+
+## Background Data Preloading
+The app implements comprehensive background preloading to eliminate loading delays:
+
+### Preloading Strategy
+- **Silent Execution**: Starts immediately when homepage loads
+- **Parallel Fetching**: All data fetched concurrently
+- **Memory Caching**: Data stored in Zustand store
+- **Fallback Mechanism**: Individual API calls if preloading fails
+
+### Implementation
+```typescript
+// In HomePage.tsx
+useEffect(() => {
+  // Start preloading immediately
+  dataPreloader.preloadAllData();
+}, []);
+```
+
+## React Query Optimization
+
+### Cache Configuration
+```typescript
+// Optimized cache settings
+{
+  staleTime: 1000 * 60 * 60, // 1 hour
+  gcTime: 1000 * 60 * 60 * 24, // 24 hours
+  enabled: !!layoutId // Conditional fetching
+}
+```
+
+### Preloaded Data Priority
+```typescript
+// Hooks use preloaded data when available
+queryFn: async () => {
+  const preloadedData = dataPreloader.getPreloadedData();
+  if (preloadedData) {
+    return preloadedData.layouts; // Instant access
+  }
+  return apiService.getLayouts(); // Fallback
+}
+```
+
+## Component Optimization
+
+### React.memo Usage
+```typescript
+// Memoize expensive components
+const DynamicSvgDiagram = React.memo(({ 
+  layoutName, 
+  layoutImage,
+  manualFields, 
+  measurements,
+  autoCalculatedFields 
+}) => {
+  // Component logic
+});
+```
+
+### useCallback for Event Handlers
+```typescript
+const handleMeasurementChange = useCallback((fieldName: string, value: number) => {
+  // Handler logic
+}, [currentShape.measurements, autoCalculationRules, currentShapeIndex]);
+```
+
+### useMemo for Expensive Calculations
+```typescript
+const calculatedFields = useMemo(() => {
+  return applyAutoCalculationRules(measurements, rules);
+}, [measurements, rules]);
+```
+
+## State Management Optimization
+
+### Selective Updates
+```typescript
+// Only update if values actually changed
+const hasChanges = Object.keys(measurements).some(
+  key => currentShape.measurements[key] !== measurements[key]
+);
+
+if (!hasChanges) return state; // Skip update
+```
+
+### Immutable Updates
+```typescript
+// Always create new objects
+const newShapes = [...state.selectedShapes];
+newShapes[shapeIndex] = {
+  ...currentShape,
+  measurements: { ...currentShape.measurements, ...measurements }
+};
+```
+
+## Image Optimization
+
+### SVG Preloading
+```typescript
+// Preload SVG images to prevent layout shifts
+const svgPromises = layouts.map(async (layout) => {
+  if (layout.layout_image) {
+    await fetch(layout.layout_image);
+  }
+});
+```
+
+### Next.js Image Component
+```typescript
+import Image from 'next/image';
+
+<Image
+  src={cutout.image}
+  alt={cutout.name}
+  width={64}
+  height={64}
+  className="object-cover w-full h-full"
+  onError={(e) => {
+    const target = e.target as HTMLImageElement;
+    target.src = '/assets/images/fallback.jpg';
+  }}
+/>
+```
+
+## Bundle Optimization
+
+### Dynamic Imports
+```typescript
+// Lazy load heavy components
+const HeavyComponent = dynamic(() => import('./HeavyComponent'), {
+  loading: () => <div>Loading...</div>
+});
+```
+
+### Tree Shaking
+- Use named exports for better tree shaking
+- Avoid importing entire libraries
+- Use specific imports from large packages
+
+## Network Optimization
+
+### Parallel API Calls
+```typescript
+// Fetch multiple resources in parallel
+const [fields, rules, groups] = await Promise.all([
+  apiService.getLayoutFields(layoutId),
+  apiService.getAutoCalculationRules(layoutId),
+  apiService.getLayoutFieldGroups(layoutId)
+]);
+```
+
+### Request Deduplication
+- React Query automatically deduplicates requests
+- Same queries within 1000ms are batched
+- Reduces unnecessary network requests
+
+## Memory Management
+
+### Cleanup Functions
+```typescript
+useEffect(() => {
+  const controller = new AbortController();
+  
+  return () => {
+    controller.abort(); // Cancel pending requests
+  };
+}, []);
+```
+
+### Event Listener Cleanup
+```typescript
+useEffect(() => {
+  const handleResize = () => { /* logic */ };
+  window.addEventListener('resize', handleResize);
+  
+  return () => {
+    window.removeEventListener('resize', handleResize);
+  };
+}, []);
+```
+
+## Monitoring and Metrics
+
+### Performance Monitoring
+```typescript
+// Track loading times
+console.time('data-preload');
+await dataPreloader.preloadAllData();
+console.timeEnd('data-preload');
+```
+
+### Error Tracking
+```typescript
+// Track performance issues
+try {
+  await expensiveOperation();
+} catch (error) {
+  console.error('Performance issue:', error);
+  // Report to monitoring service
+}
+```
+
+## Best Practices Summary
+- **Preload Critical Data**: Background preloading eliminates delays
+- **Optimize Re-renders**: Use React.memo, useCallback, useMemo
+- **Efficient State Updates**: Only update when necessary
+- **Image Optimization**: Preload SVGs, use Next.js Image
+- **Bundle Splitting**: Lazy load heavy components
+- **Network Efficiency**: Parallel requests, request deduplication
+- **Memory Cleanup**: Proper cleanup in useEffect
+- **Monitor Performance**: Track metrics and errors
+description:
+globs:
+alwaysApply: false
+---

@@ -1,0 +1,182 @@
+# TypeScript Type Definitions
+
+## Core Types
+All type definitions are located in [types/index.ts](mdc:types/index.ts).
+
+## Database Models
+
+### Layout
+```typescript
+interface Layout {
+  id: string;
+  name: string;
+  layout_image: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+```
+
+### Material
+```typescript
+interface Material {
+  id: string;
+  name: string;
+  brand: string;
+  price_per_sqft: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+```
+
+### Edge Style
+```typescript
+interface EdgeStyle {
+  id: string;
+  name: string;
+  thickness: string;
+  price_per_linear_ft: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+```
+
+### Layout Field
+```typescript
+interface LayoutField {
+  id: string;
+  layout_id: string;
+  field_name: string;
+  field_type: 'manual' | 'auto_calculated';
+  is_visible: boolean;
+  display_name: string;
+  unit?: string;
+}
+```
+
+### Auto Calculation Rule
+```typescript
+interface AutoCalculationRule {
+  id: string;
+  layout_id: string;
+  rule_name: string;
+  formula: string;
+  is_active: boolean;
+}
+```
+
+## Application Types
+
+### Selected Shape
+```typescript
+interface SelectedShape {
+  layout: Layout;
+  measurements: Record<string, number>;
+  wallToggles: Record<string, boolean>;
+  hasBacksplash: boolean;
+  backsplashHeight?: number;
+  specification?: ShapeSpecification;
+}
+```
+
+### Shape Specification
+```typescript
+interface ShapeSpecification {
+  keepCurrentCabinets?: 'yes' | 'no';
+  countertopToRemove?: string;
+  hasHolesOrCuts?: 'yes' | 'no';
+  cutouts?: { [cutoutId: string]: number };
+  sinks?: { [sinkId: string]: number };
+}
+```
+
+### Lead Information
+```typescript
+interface LeadInfo {
+  fullName: string;
+  email: string;
+  confirmEmail: string;
+  phone: string;
+  streetAddress: string;
+  zipCode: string;
+  city: string;
+  state: string;
+}
+```
+
+### Project State
+```typescript
+interface ProjectState {
+  selectedRoom: RoomType | null;
+  selectedShapes: SelectedShape[];
+  selectedMaterial: Material | null;
+  selectedEdgeStyle: EdgeStyle | null;
+  leadInfo: LeadInfo | null;
+  preloadedData: PreloadedData | null;
+  currentStep: number;
+  totalSteps: number;
+}
+```
+
+### Preloaded Data
+```typescript
+interface PreloadedData {
+  layouts: Layout[];
+  materials: Material[];
+  edgeStyles: EdgeStyle[];
+  layoutFields: { [layoutId: string]: LayoutField[] };
+  autoCalculationRules: { [layoutId: string]: AutoCalculationRule[] };
+  layoutFieldGroups: { [layoutId: string]: any[] };
+}
+```
+
+## Utility Types
+
+### Room Type
+```typescript
+type RoomType = 'kitchen' | 'bathroom';
+```
+
+### Cutout and Sink Options
+```typescript
+interface CutoutOption {
+  id: string;
+  name: string;
+  description: string;
+  image: string;
+}
+
+interface SinkOption {
+  id: string;
+  name: string;
+  description: string;
+  image: string;
+}
+```
+
+## Type Guards
+```typescript
+// Check if object is a valid layout
+function isLayout(obj: any): obj is Layout {
+  return obj && typeof obj.id === 'string' && typeof obj.name === 'string';
+}
+
+// Check if object is a valid material
+function isMaterial(obj: any): obj is Material {
+  return obj && typeof obj.id === 'string' && typeof obj.price_per_sqft === 'number';
+}
+```
+
+## Best Practices
+- **Strict Typing**: Use specific types instead of `any`
+- **Optional Properties**: Use `?` for optional fields
+- **Union Types**: Use for fields with specific values
+- **Record Types**: Use for dynamic object properties
+- **Type Guards**: Validate data at runtime
+- **Consistent Naming**: Follow camelCase for application types
+description:
+globs:
+alwaysApply: false
+---

@@ -1,0 +1,162 @@
+---
+globs: utils/autoCalculationRules.ts,utils/calculations.ts
+---
+# Auto Calculation Rules System
+
+## Overview
+The auto calculation rules system provides layout-specific calculations for kitchen countertop measurements. Located in [utils/autoCalculationRules.ts](mdc:utils/autoCalculationRules.ts).
+
+## Architecture
+
+### AutoCalculationRules Class
+A dedicated class that handles layout-specific auto-calculation logic, separated from the main calculation engine for better organization and maintainability.
+
+### Key Features
+- **Layout-Specific Rules**: Different calculation rules for each layout type
+- **Field Name Compatibility**: Supports both camelCase and snake_case naming conventions
+- **Extensible Design**: Easy to add new layout types and rules
+- **Clean Separation**: Separated from area calculations and database rules
+
+## Supported Layouts
+
+### L-Shape and L-Shaped-Island
+```typescript
+// Rule 1: Width C = Width B - Depth A
+// Rule 2: Width D = Width A - Depth B
+// Rule 3: Depth B = Width B - Width E (if Width E is provided)
+```
+
+### U-Shape
+```typescript
+// Rule 1: Width D = Width C - Depth C
+// Rule 2: Width E = Width B - Depth C
+// Area Formula: ((depthB * widthE) + (depthA * widthD) + (widthA * depthC)) / 144
+```
+
+## Core Methods
+
+### Apply Layout-Specific Rules
+```typescript
+AutoCalculationRules.applyLayoutSpecificRules(
+  layoutName: string,
+  calculatedFields: Record<string, number>,
+  measurements: Record<string, number>
+): void
+```
+
+### Get Field Value (with compatibility)
+```typescript
+private static getFieldValue(
+  measurements: Record<string, number>,
+  fieldName: string
+): number | undefined
+```
+
+### Set Field Value (dual format)
+```typescript
+private static setFieldValue(
+  calculatedFields: Record<string, number>,
+  fieldName: string,
+  value: number
+): void
+```
+
+## Usage Pattern
+
+### In CalculationEngine
+```typescript
+// Apply layout-specific rules after database rules
+if (layoutName) {
+  AutoCalculationRules.applyLayoutSpecificRules(layoutName, calculatedFields, measurements);
+}
+```
+
+### In Components
+```typescript
+// Single call handles both database and layout-specific rules
+const calculatedValues = calculateAutoFields(
+  autoCalculationRules, 
+  newMeasurements, 
+  currentShape.layout.name
+);
+```
+
+## Utility Methods
+
+### Check Layout Support
+```typescript
+AutoCalculationRules.hasSpecificRules(layoutName: string): boolean
+AutoCalculationRules.getSupportedLayouts(): string[]
+```
+
+### Get Rule Documentation
+```typescript
+AutoCalculationRules.getRuleDescription(layoutName: string): string[]
+```
+
+## Field Name Compatibility
+
+### Automatic Conversion
+- **Input**: Accepts both `widthA` and `width_a`
+- **Output**: Sets both formats for maximum compatibility
+- **Database Integration**: Works with both naming conventions
+
+### Implementation
+```typescript
+// Convert camelCase to snake_case
+const snakeCaseField = fieldName.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+
+// Get value from either format
+return measurements[fieldName] || measurements[snakeCaseField];
+
+// Set both formats
+calculatedFields[fieldName] = value;
+calculatedFields[snakeCaseField] = value;
+```
+
+## Adding New Layout Rules
+
+### Step 1: Add Layout to Switch
+```typescript
+case 'NewLayout':
+  this.applyNewLayoutRules(calculatedFields, measurements);
+  break;
+```
+
+### Step 2: Implement Rule Method
+```typescript
+private static applyNewLayoutRules(
+  calculatedFields: Record<string, number>,
+  measurements: Record<string, number>
+): void {
+  // Implement specific calculation rules
+}
+```
+
+### Step 3: Update Documentation Methods
+```typescript
+// Add to getSupportedLayouts()
+// Add to getRuleDescription()
+```
+
+## Benefits
+
+### Code Organization
+- **Separation of Concerns**: Layout rules separated from area calculations
+- **Single Responsibility**: Each method has a clear, focused purpose
+- **Maintainability**: Easy to modify or add new layout rules
+
+### Performance
+- **Efficient Lookups**: Direct field access with fallback
+- **Minimal Processing**: Only applies relevant rules
+- **No Redundancy**: Clean, optimized calculation flow
+
+### Extensibility
+- **Easy Addition**: New layouts require minimal changes
+- **Consistent Pattern**: All layouts follow the same structure
+- **Future-Proof**: Architecture supports complex future requirements
+
+## Error Handling
+- **Safe Field Access**: Handles missing fields gracefully
+- **Validation**: Checks for undefined values before calculations
+- **Fallback Values**: Provides sensible defaults when needed

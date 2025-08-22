@@ -89,12 +89,56 @@ export const DynamicSvgDiagram = React.memo(({
   // Update existing labels in the SVG with measurement values
   let completeSvg = baseSvgContent;
   
-  // Process manual fields
-  manualFields.forEach((field) => {
+  // Debug: Check if SVG contains expected text
+  console.log('🔍 SVG contains "Depth B":', completeSvg.includes('Depth B'));
+  console.log('🔍 SVG contains "label_depth_b":', completeSvg.includes('label_depth_b'));
+  
+  // Process all fields from database (manual and auto-calculated)
+  const allFields = [...manualFields, ...autoCalculatedFields];
+  console.log('🔍 Manual fields:', manualFields.map(f => ({ name: f.field_name, label: f.field_label, svgId: f.svg_id })));
+  console.log('🔍 Auto-calculated fields:', autoCalculatedFields.map(f => ({ name: f.field_name, label: f.field_label, svgId: f.svg_id })));
+  console.log('🔍 All fields to process:', allFields.map(f => ({ name: f.field_name, label: f.field_label, svgId: f.svg_id })));
+  console.log('🔍 Measurements:', measurements);
+  console.log('🔍 Looking for depthB:', measurements['depthB'], 'or depth_b:', measurements['depth_b']);
+  
+  allFields.forEach((field) => {
     const value = measurements[field.field_name] || 0;
     const fieldLabel = field.field_label;
     
-    // Find and replace the text content of existing labels
+    // Use SVG ID directly from the database field
+    const svgId = field.svg_id;
+    
+    // First, try to replace by SVG ID if available (most specific)
+    if (svgId) {
+      const idRegex = new RegExp(
+        `(<text[^>]*id="${svgId}"[^>]*>\\s*<tspan[^>]*>\\s*)${fieldLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\s*</tspan>\\s*</text>)`,
+        'g'
+      );
+      
+      completeSvg = completeSvg.replace(idRegex, (match, startTag, endTag) => {
+        const displayText = value > 0 ? `${value.toFixed(3)} in` : fieldLabel;
+        console.log(`✅ Database SVG ID replacement for ${field.field_name}: ${fieldLabel} -> ${displayText} (value: ${value})`);
+        return `${startTag}${displayText}${endTag}`;
+      });
+      
+      // Check if the replacement actually happened
+      if (!completeSvg.includes(fieldLabel) && value > 0) {
+        console.log(`⚠️ SVG ID replacement may have failed for ${field.field_name} (${fieldLabel})`);
+      }
+      
+      // Also try simpler ID-based replacement
+      const simpleIdRegex = new RegExp(
+        `(<text[^>]*id="${svgId}"[^>]*>\\s*)${fieldLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\s*</text>)`,
+        'g'
+      );
+      
+      completeSvg = completeSvg.replace(simpleIdRegex, (match, startTag, endTag) => {
+        const displayText = value > 0 ? `${value.toFixed(3)} in` : fieldLabel;
+        return `${startTag}${displayText}${endTag}`;
+      });
+    }
+    
+    // Fallback: Find and replace the text content of existing labels
     // Look for <text> elements that contain the field label
     const labelRegex = new RegExp(
       `(<text[^>]*>\\s*<tspan[^>]*>\\s*)${fieldLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\s*</tspan>\\s*</text>)`,
@@ -103,7 +147,8 @@ export const DynamicSvgDiagram = React.memo(({
     
     // Replace the label text with the measurement value
     completeSvg = completeSvg.replace(labelRegex, (match, startTag, endTag) => {
-      return `${startTag}${fieldLabel}: ${value.toFixed(3)} in${endTag}`;
+      const displayText = value > 0 ? `${value.toFixed(3)} in` : fieldLabel;
+      return `${startTag}${displayText}${endTag}`;
     });
     
     // Also try a simpler approach for cases where the label might be directly in the text element
@@ -113,35 +158,30 @@ export const DynamicSvgDiagram = React.memo(({
     );
     
     completeSvg = completeSvg.replace(simpleLabelRegex, (match, startTag, endTag) => {
-      return `${startTag}${fieldLabel}: ${value.toFixed(3)} in${endTag}`;
+      const displayText = value > 0 ? `${value.toFixed(3)} in` : fieldLabel;
+      return `${startTag}${displayText}${endTag}`;
     });
   });
 
-  // Process auto-calculated fields (including Width C and Width D for L-Shape)
-  const allFields = [...manualFields, ...autoCalculatedFields];
-  allFields.forEach((field) => {
-    const value = measurements[field.field_name] || 0;
-    const fieldLabel = field.field_label;
+  // Special fallback for Depth B if it's not being processed
+  const depthBValue = measurements['depthB'] || measurements['depth_b'] || 0;
+  if (depthBValue > 0) {
+    console.log('🔧 Special fallback for Depth B:', depthBValue);
     
-    // Find and replace the text content of existing labels
-    const labelRegex = new RegExp(
-      `(<text[^>]*>\\s*<tspan[^>]*>\\s*)${fieldLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\s*</tspan>\\s*</text>)`,
-      'g'
-    );
-    
-    completeSvg = completeSvg.replace(labelRegex, (match, startTag, endTag) => {
-      return `${startTag}${fieldLabel}: ${value.toFixed(3)} in${endTag}`;
+    // Try to replace "Depth B" text in the SVG
+    const depthBRegex = /(<text[^>]*>.*?<tspan[^>]*>.*?)Depth B(.*?<\/tspan>.*?<\/text>)/g;
+    completeSvg = completeSvg.replace(depthBRegex, (match, startTag, endTag) => {
+      console.log('✅ Special Depth B replacement found and applied');
+      return `${startTag}${depthBValue.toFixed(3)} in${endTag}`;
     });
     
-    const simpleLabelRegex = new RegExp(
-      `(<text[^>]*>\\s*)${fieldLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\s*</text>)`,
-      'g'
-    );
-    
-    completeSvg = completeSvg.replace(simpleLabelRegex, (match, startTag, endTag) => {
-      return `${startTag}${fieldLabel}: ${value.toFixed(3)} in${endTag}`;
+    // Also try simpler replacement
+    const simpleDepthBRegex = /(<text[^>]*>.*?)Depth B(.*?<\/text>)/g;
+    completeSvg = completeSvg.replace(simpleDepthBRegex, (match, startTag, endTag) => {
+      console.log('✅ Simple Depth B replacement found and applied');
+      return `${startTag}${depthBValue.toFixed(3)} in${endTag}`;
     });
-  });
+  }
 
   return (
     <div 
@@ -281,28 +321,9 @@ export default function MeasurementsPage() {
   const handleMeasurementChange = useCallback((fieldName: string, value: number) => {
     const newMeasurements = { ...currentShape.measurements, [fieldName]: value };
     
-    // Calculate auto-calculated fields
-    const calculatedValues = calculateAutoFields(autoCalculationRules, newMeasurements);
+    // Calculate auto-calculated fields including layout-specific rules
+    const calculatedValues = calculateAutoFields(autoCalculationRules, newMeasurements, currentShape.layout.name);
     const allMeasurements = { ...newMeasurements, ...calculatedValues };
-    
-    // Apply L-Shape specific rules for LShape and L-Shaped-Island
-    if (currentShape.layout.name === 'LShape' || currentShape.layout.name === 'L-Shaped-Island') {
-      // Width D = Width A - Depth B
-      const widthA = allMeasurements['widthA'] || allMeasurements['width_a'];
-      const depthB = allMeasurements['depthB'] || allMeasurements['depth_b'];
-      if (widthA !== undefined && depthB !== undefined) {
-        allMeasurements['widthD'] = widthA - depthB;
-        allMeasurements['width_d'] = widthA - depthB; // Also set snake_case for compatibility
-      }
-      
-      // Width C = Width B - Depth A
-      const widthB = allMeasurements['widthB'] || allMeasurements['width_b'];
-      const depthA = allMeasurements['depthA'] || allMeasurements['depth_a'];
-      if (widthB !== undefined && depthA !== undefined) {
-        allMeasurements['widthC'] = widthB - depthA;
-        allMeasurements['width_c'] = widthB - depthA; // Also set snake_case for compatibility
-      }
-    }
     
     // Calculate square feet
     const squareFeet = CalculationEngine.calculateSquareFeet(currentShape.layout, allMeasurements);
@@ -398,7 +419,7 @@ export default function MeasurementsPage() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 py-8 pb-32">
+      <div className="max-w-6xl mx-auto px-4 py-8 pb-32">
         {/* Step Indicator */}
         <div className="text-sm text-gray-500 mb-4">Step 4 of 8</div>
 
@@ -459,61 +480,63 @@ export default function MeasurementsPage() {
 
         {/* Manual Measurement Fields */}
         {!loading && !error && manualFields.length > 0 && (
-          <div className="space-y-6 mb-8">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">Main Measurements</h3>
-            {manualFields.map((field) => (
-              <motion.div
-                key={field.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="bg-white rounded-xl p-6 shadow-sm"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <label className="text-lg font-medium text-gray-800">
-                    {field.field_label} (in)
-                  </label>
-                  <div className="flex items-center gap-4">
-                    {/* Wall Toggle - only show if layout supports wall toggles */}
-                    {currentShape.layout.supports_wall_toggle && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-600">Wall</span>
-                        <button
-                          onClick={() => handleWallToggle(field.field_name, !currentShape.wallToggles[field.field_name])}
-                          className={`w-12 h-6 rounded-full transition-colors ${
-                            currentShape.wallToggles[field.field_name] 
-                              ? 'bg-blue-500' 
-                              : 'bg-gray-300'
-                          }`}
-                        >
-                          <div 
-                            className={`w-5 h-5 bg-white rounded-full transition-transform ${
+          <div className="mb-8">
+            <h3 className="text-xl font-semibold text-gray-800 mb-6">Main Measurements</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              {manualFields.map((field) => (
+                <motion.div
+                  key={field.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="bg-white rounded-xl p-4 md:p-6 shadow-sm"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <label className="text-base md:text-lg font-medium text-gray-800">
+                      {field.field_label} (in)
+                    </label>
+                    <div className="flex items-center gap-4">
+                      {/* Wall Toggle - only show if layout supports wall toggles */}
+                      {currentShape.layout.supports_wall_toggle && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-600">Wall</span>
+                          <button
+                            onClick={() => handleWallToggle(field.field_name, !currentShape.wallToggles[field.field_name])}
+                            className={`w-12 h-6 rounded-full transition-colors ${
                               currentShape.wallToggles[field.field_name] 
-                                ? 'translate-x-6' 
-                                : 'translate-x-0.5'
+                                ? 'bg-blue-500' 
+                                : 'bg-gray-300'
                             }`}
-                          />
-                        </button>
-                      </div>
-                    )}
+                          >
+                            <div 
+                              className={`w-5 h-5 bg-white rounded-full transition-transform ${
+                                currentShape.wallToggles[field.field_name] 
+                                  ? 'translate-x-6' 
+                                  : 'translate-x-0.5'
+                              }`}
+                            />
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                {/* Input Field */}
-                <MeasurementInput
-                  field={field}
-                  value={currentShape.measurements[field.field_name] || 0}
-                  onChange={(value) => handleMeasurementChange(field.field_name, value)}
-                />
-              </motion.div>
-            ))}
+                  {/* Input Field */}
+                  <MeasurementInput
+                    field={field}
+                    value={currentShape.measurements[field.field_name] || 0}
+                    onChange={(value) => handleMeasurementChange(field.field_name, value)}
+                  />
+                </motion.div>
+              ))}
+            </div>
           </div>
         )}
 
         {/* Auto-Calculated Fields */}
         {!loading && !error && autoCalculatedFields.length > 0 && (
-          <div className="space-y-6 mb-8">
-            <div className="flex items-center justify-between">
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-semibold text-gray-800">Calculated Measurements</h3>
               <button
                 onClick={() => setShowCalculatedFields(!showCalculatedFields)}
@@ -525,17 +548,17 @@ export default function MeasurementsPage() {
             </div>
             
             {showCalculatedFields && (
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 {autoCalculatedFields.map((field) => (
                   <motion.div
                     key={field.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
-                    className="bg-blue-50 rounded-xl p-6 shadow-sm border border-blue-200"
+                    className="bg-blue-50 rounded-xl p-4 md:p-6 shadow-sm border border-blue-200"
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-lg font-medium text-gray-800 flex items-center gap-2">
+                      <label className="text-base md:text-lg font-medium text-gray-800 flex items-center gap-2">
                         <Calculator className="w-5 h-5 text-blue-600" />
                         {field.field_label} (in)
                       </label>
@@ -557,30 +580,32 @@ export default function MeasurementsPage() {
 
         {/* Sink Fields */}
         {!loading && !error && sinkFields.length > 0 && currentShape.layout.supports_sink && (
-          <div className="space-y-6 mb-8">
-            <h3 className="text-xl font-semibold text-gray-800 mb-4">Sink Measurements</h3>
-            {sinkFields.map((field) => (
-              <motion.div
-                key={field.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="bg-white rounded-xl p-6 shadow-sm border-l-4 border-orange-500"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <label className="text-lg font-medium text-gray-800">
-                    {field.field_label} (in)
-                  </label>
-                </div>
+          <div className="mb-8">
+            <h3 className="text-xl font-semibold text-gray-800 mb-6">Sink Measurements</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              {sinkFields.map((field) => (
+                <motion.div
+                  key={field.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="bg-white rounded-xl p-4 md:p-6 shadow-sm border-l-4 border-orange-500"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <label className="text-base md:text-lg font-medium text-gray-800">
+                      {field.field_label} (in)
+                    </label>
+                  </div>
 
-                {/* Input Field */}
-                <MeasurementInput
-                  field={field}
-                  value={currentShape.measurements[field.field_name] || 0}
-                  onChange={(value) => handleMeasurementChange(field.field_name, value)}
-                />
-              </motion.div>
-            ))}
+                  {/* Input Field */}
+                  <MeasurementInput
+                    field={field}
+                    value={currentShape.measurements[field.field_name] || 0}
+                    onChange={(value) => handleMeasurementChange(field.field_name, value)}
+                  />
+                </motion.div>
+              ))}
+            </div>
           </div>
         )}
 

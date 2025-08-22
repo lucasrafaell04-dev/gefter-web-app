@@ -1,57 +1,148 @@
-# Schema do Banco de Dados - PostgreSQL/Supabase
+# Database Schema & Prisma
 
-## Configuração Prisma
-[prisma/schema.prisma](mdc:prisma/schema.prisma) - Schema principal do banco
+## Schema Overview
+The database schema is defined in [prisma/schema.prisma](mdc:prisma/schema.prisma) and uses PostgreSQL with Prisma ORM.
 
-### Conexão
+## Core Tables
+
+### Layouts
 ```prisma
-datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
-  schemas   = ["auth", "public"]
+model layouts {
+  id            String   @id @default(cuid())
+  name          String
+  layout_image  String
+  is_active     Boolean  @default(true)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
 }
 ```
 
-## Tabelas Principais
+### Layout Fields
+```prisma
+model layout_fields {
+  id           String   @id @default(cuid())
+  layout_id    String
+  field_name   String
+  field_type   String   // 'manual' or 'auto_calculated'
+  is_visible   Boolean  @default(true)
+  display_name String
+  unit         String?  // 'inches', 'sqft', etc.
+  layout       layouts  @relation(fields: [layout_id], references: [id])
+}
+```
 
-### layouts
-- **Propósito**: Formas de cozinha disponíveis
-- **Campos**: id, name, description, layout_image, layout_type, svg_template_name, is_active
-- **Relacionamentos**: layout_fields, auto_calculation_rules, quote_items
+### Materials
+```prisma
+model materials {
+  id              String   @id @default(cuid())
+  name            String
+  brand           String
+  price_per_sqft  Float
+  is_active       Boolean  @default(true)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+}
+```
 
-### materials
-- **Propósito**: Materiais disponíveis para bancadas
-- **Campos**: id, name, brand, color, thickness, price_per_sqft, desc_Curta, desc_Longa
-- **Relacionamentos**: suppliers, quote_items
+### Edge Styles
+```prisma
+model edge_styles {
+  id                    String   @id @default(cuid())
+  name                  String
+  thickness             String
+  price_per_linear_ft   Float
+  is_active             Boolean  @default(true)
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+}
+```
 
-### edge_styles
-- **Propósito**: Estilos de borda disponíveis
-- **Campos**: id, name, description, image, price_per_linear_ft, thickness, is_active
-- **Criada via**: [database/create_edge_styles_table.sql](mdc:database/create_edge_styles_table.sql)
+### Auto Calculation Rules
+```prisma
+model auto_calculation_rules {
+  id           String   @id @default(cuid())
+  layout_id    String
+  rule_name    String
+  formula      String
+  is_active    Boolean  @default(true)
+  layout       layouts  @relation(fields: [layout_id], references: [id])
+}
+```
 
-### layout_fields
-- **Propósito**: Campos de medida para cada layout
-- **Campos**: id, layout_id, field_name, field_label, svg_id, field_type, data_type, unit_type
-- **Tipos**: manual, auto_calculated, sink, backsplash
+### Layout Field Groups
+```prisma
+model layout_field_groups {
+  id           String   @id @default(cuid())
+  layout_id    String
+  group_name   String
+  display_name String
+  is_active    Boolean  @default(true)
+  layout       layouts  @relation(fields: [layout_id], references: [id])
+}
+```
 
-### auto_calculation_rules
-- **Propósito**: Regras de cálculo automático para campos
-- **Campos**: id, layout_id, target_field_name, formula, description, is_active
-- **Exemplo**: L-Shape - Width D = Width A - Depth B
+### Leads
+```prisma
+model leads {
+  id           String   @id @default(cuid())
+  full_name    String
+  email        String
+  phone        String
+  street_address String
+  zip_code     String
+  city         String
+  state        String
+  created_at   DateTime @default(now())
+}
+```
 
-### layout_field_groups
-- **Propósito**: Agrupamento de campos por seção
-- **Campos**: id, layout_id, group_name, group_label, sort_order, is_visible
+## API Routes
+API routes are located in `app/api/` and follow RESTful patterns:
 
-## APIs
-- [app/api/layouts/route.ts](mdc:app/api/layouts/route.ts) - Layouts
-- [app/api/materials/route.ts](mdc:app/api/materials/route.ts) - Materiais
-- [app/api/edge-styles/route.ts](mdc:app/api/edge-styles/route.ts) - Edge styles
-- [app/api/layout-fields/[layoutId]/route.ts](mdc:app/api/layout-fields/[layoutId]/route.ts) - Campos de layout
-- [app/api/auto-calculation-rules/[layoutId]/route.ts](mdc:app/api/auto-calculation-rules/[layoutId]/route.ts) - Regras de cálculo
+### Layouts API
+- `GET /api/layouts` - Get all active layouts
+- `GET /api/layout-fields/[layoutId]` - Get fields for specific layout
+- `GET /api/auto-calculation-rules/[layoutId]` - Get calculation rules
+- `GET /api/layout-field-groups/[layoutId]` - Get field groups
 
-## Serviços
-- [services/apiService.ts](mdc:services/apiService.ts) - Cliente API
-- [services/prismaService.ts](mdc:services/prismaService.ts) - Serviço Prisma
-- [lib/prisma.ts](mdc:lib/prisma.ts) - Cliente Prisma singleton
+### Materials & Edges API
+- `GET /api/materials` - Get all active materials
+- `GET /api/edge-styles` - Get all active edge styles
+
+## Prisma Client Usage
+```typescript
+// In API routes
+import { prisma } from '@/lib/prisma';
+
+// Get all active layouts
+const layouts = await prisma.layouts.findMany({
+  where: { is_active: true },
+  orderBy: { name: 'asc' }
+});
+
+// Get layout fields with layout relation
+const fields = await prisma.layout_fields.findMany({
+  where: { 
+    layout_id: layoutId,
+    is_visible: true 
+  },
+  include: { layout: true }
+});
+```
+
+## Database Relationships
+- **One-to-Many**: Layout → Layout Fields, Auto Calculation Rules, Field Groups
+- **Foreign Keys**: All related tables reference layouts.id
+- **Soft Deletes**: Use is_active flag instead of hard deletes
+
+## Data Validation
+- **Required Fields**: Enforced at database level
+- **Type Safety**: Prisma provides TypeScript types
+- **Constraints**: Unique constraints where needed
+- **Defaults**: Sensible defaults for common fields
+
+## Performance Considerations
+- **Indexes**: Primary keys and foreign keys are indexed
+- **Selective Queries**: Only fetch needed fields
+- **Relations**: Use include for related data
+- **Pagination**: Implement for large datasets

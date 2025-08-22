@@ -1,4 +1,5 @@
 import { Layout, LayoutField, AutoCalculationRule } from '@/types';
+import { AutoCalculationRules } from './autoCalculationRules';
 
 export class CalculationEngine {
   /**
@@ -8,24 +9,66 @@ export class CalculationEngine {
    * @returns Área em pés quadrados
    */
   static calculateSquareFeet(layout: Layout, measurements: Record<string, number>): number {
+    let mainArea = 0;
+    
+    // Calculate main layout area
     switch (layout.name) {
       case 'SingleWall':
-        return this.calculateSingleWallArea(measurements);
+        mainArea = this.calculateSingleWallArea(measurements);
+        break;
       case 'LShape':
-        return this.calculateLShapeArea(measurements);
+        mainArea = this.calculateLShapeArea(measurements);
+        break;
       case 'UShape':
-        return this.calculateUShapeArea(measurements);
+        mainArea = this.calculateUShapeArea(measurements);
+        break;
       case 'Island':
-        return this.calculateIslandArea(measurements);
+        mainArea = this.calculateIslandArea(measurements);
+        break;
       case 'L-Shaped-Island':
-        return this.calculateLShapedIslandArea(measurements);
+        mainArea = this.calculateLShapeArea(measurements); // Use L-Shape calculation for main area
+        break;
       case 'Angled-shaped':
-        return this.calculateAngledShapeArea(measurements);
+        mainArea = this.calculateAngledShapeArea(measurements);
+        break;
       case 'Angled-shaped-Island':
-        return this.calculateAngledShapeIslandArea(measurements);
+        mainArea = this.calculateAngledShapeArea(measurements); // Use Angled-shape calculation for main area
+        break;
       default:
-        return 0;
+        mainArea = 0;
     }
+    
+    // Add sink area for Island layouts
+    if (this.isIslandLayout(layout.name)) {
+      const sinkArea = this.calculateSinkArea(measurements);
+      const totalArea = mainArea + sinkArea;
+      console.log(`${layout.name} Total Area: Main (${mainArea.toFixed(3)}) + Sink (${sinkArea.toFixed(3)}) = ${totalArea.toFixed(3)} sq ft`);
+      return totalArea;
+    }
+    
+    return mainArea;
+  }
+
+  /**
+   * Verifica se o layout é do tipo Island (contém sink)
+   * @param layoutName - Nome do layout
+   * @returns true se for um layout Island
+   */
+  private static isIslandLayout(layoutName: string): boolean {
+    return layoutName.includes('Island') || layoutName.includes('sink');
+  }
+
+  /**
+   * Calcula a área do sink/Island: Sink Width A x Sink Depth A / 144
+   * @param measurements - Medidas da peça
+   * @returns Área do sink em pés quadrados
+   */
+  private static calculateSinkArea(measurements: Record<string, number>): number {
+    const sinkWidthA = measurements['sinkWidthA'] || measurements['sink_width_a'] || 0;
+    const sinkDepthA = measurements['sinkDepthA'] || measurements['sink_depth_a'] || 0;
+    const sinkArea = (sinkWidthA * sinkDepthA) / 144;
+    console.log(`Sink Area: ${sinkWidthA} x ${sinkDepthA} = ${sinkArea.toFixed(3)} sq ft`);
+    return sinkArea;
   }
 
   /**
@@ -58,18 +101,22 @@ export class CalculationEngine {
   }
 
   /**
-   * Calcula área para UShape: (Width A + Width B + Width C) x Depth / 144
+   * Calcula área para UShape: ((depthB * widthE) + (depthA * widthD) + (widthA * depthC)) / 144
    * @param measurements - Medidas da peça
    * @returns Área em pés quadrados
    */
   private static calculateUShapeArea(measurements: Record<string, number>): number {
     const widthA = measurements['widthA'] || measurements['width_a'] || 0;
-    const widthB = measurements['widthB'] || measurements['width_b'] || 0;
-    const widthC = measurements['widthC'] || measurements['width_c'] || 0;
-    const depth = measurements['depthA'] || measurements['depth_a'] || 0;
+    const widthD = measurements['widthD'] || measurements['width_d'] || 0;
+    const widthE = measurements['widthE'] || measurements['width_e'] || 0;
+    const depthA = measurements['depthA'] || measurements['depth_a'] || 0;
+    const depthB = measurements['depthB'] || measurements['depth_b'] || 0;
+    const depthC = measurements['depthC'] || measurements['depth_c'] || 0;
     
-    // Três seções retangulares
-    return ((widthA + widthB + widthC) * depth) / 144;
+    // Três seções retangulares: (depthB * widthE) + (depthA * widthD) + (widthA * depthC)
+    const area = ((depthB * widthE) + (depthA * widthD) + (widthA * depthC)) / 144;
+    console.log(`U-Shape Area: (${depthB} * ${widthE}) + (${depthA} * ${widthD}) + (${widthA} * ${depthC}) = ${area} sq ft`);
+    return area;
   }
 
   /**
@@ -85,20 +132,7 @@ export class CalculationEngine {
     return (widthA * depthA) / 144;
   }
 
-  /**
-   * Calcula área para L-Shaped-Island: (Width A x Depth A) + (Width B x Depth B) / 144
-   * @param measurements - Medidas da peça
-   * @returns Área em pés quadrados
-   */
-  private static calculateLShapedIslandArea(measurements: Record<string, number>): number {
-    const widthA = measurements['widthA'] || measurements['width_a'] || 0;
-    const depthA = measurements['depthA'] || measurements['depth_a'] || 0;
-    const widthB = measurements['widthB'] || measurements['width_b'] || 0;
-    const depthB = measurements['depthB'] || measurements['depth_b'] || 0;
-    
-    // Duas seções retangulares (igual ao LShape)
-    return ((widthA * depthA) + (widthB * depthB)) / 144;
-  }
+
 
   /**
    * Calcula área para Angled-shaped: Soma de todas as seções / 144
@@ -119,31 +153,20 @@ export class CalculationEngine {
     return totalArea / 144;
   }
 
-  /**
-   * Calcula área para Angled-shaped-Island: Soma de todas as seções / 144
-   * @param measurements - Medidas da peça
-   * @returns Área em pés quadrados
-   */
-  private static calculateAngledShapeIslandArea(measurements: Record<string, number>): number {
-    const widthA = measurements['widthA'] || measurements['width_a'] || 0;
-    const widthB = measurements['widthB'] || measurements['width_b'] || 0;
-    const widthC = measurements['widthC'] || measurements['width_c'] || 0;
-    const depthA = measurements['depthA'] || measurements['depth_a'] || 0;
-    const depthB = measurements['depthB'] || measurements['depth_b'] || 0;
-    const depthC = measurements['depthC'] || measurements['depth_c'] || 0;
-    
-    // Soma de todas as seções
-    const totalArea = (widthA * depthA) + (widthB * depthB) + (widthC * depthC);
-    return totalArea / 144;
-  }
+
 
   /**
    * Calcula campos auto-calculados baseados nas regras do banco de dados
    * @param rules - Regras de auto-cálculo
    * @param measurements - Medidas atuais
+   * @param layoutName - Nome do layout para aplicar regras específicas
    * @returns Medidas com campos auto-calculados
    */
-  static calculateAutoFields(rules: AutoCalculationRule[], measurements: Record<string, number>): Record<string, number> {
+  static calculateAutoFields(
+    rules: AutoCalculationRule[], 
+    measurements: Record<string, number>,
+    layoutName?: string
+  ): Record<string, number> {
     const calculatedFields: Record<string, number> = {};
     
     // Aplicar regras do banco de dados
@@ -159,34 +182,15 @@ export class CalculationEngine {
       }
     });
     
-    // Aplicar regras específicas para L-Shape e L-Shape Island
-    this.applyLShapeSpecificRules(calculatedFields, measurements);
+    // Aplicar regras específicas baseadas no layout
+    if (layoutName) {
+      AutoCalculationRules.applyLayoutSpecificRules(layoutName, calculatedFields, measurements);
+    }
     
     return calculatedFields;
   }
 
-  /**
-   * Aplica regras específicas para L-Shape e L-Shape Island
-   * @param calculatedFields - Campos já calculados
-   * @param measurements - Medidas atuais
-   */
-  private static applyLShapeSpecificRules(calculatedFields: Record<string, number>, measurements: Record<string, number>): void {
-    // Regra para Width D: Width A - Depth B
-    const widthA = measurements['widthA'] || measurements['width_a'];
-    const depthB = measurements['depthB'] || measurements['depth_b'];
-    if (widthA !== undefined && depthB !== undefined) {
-      calculatedFields['widthD'] = widthA - depthB;
-      calculatedFields['width_d'] = widthA - depthB; // Also set snake_case for compatibility
-    }
-    
-    // Regra para Width C: Width B - Depth A
-    const widthB = measurements['widthB'] || measurements['width_b'];
-    const depthA = measurements['depthA'] || measurements['depth_a'];
-    if (widthB !== undefined && depthA !== undefined) {
-      calculatedFields['widthC'] = widthB - depthA;
-      calculatedFields['width_c'] = widthB - depthA; // Also set snake_case for compatibility
-    }
-  }
+
 
   /**
    * Avalia uma fórmula matemática de forma segura
@@ -223,8 +227,12 @@ export function evaluateFormula(formula: string, measurements: Record<string, nu
   return CalculationEngine.evaluateFormula(formula, measurements);
 }
 
-export function calculateAutoFields(rules: AutoCalculationRule[], measurements: Record<string, number>): Record<string, number> {
-  return CalculationEngine.calculateAutoFields(rules, measurements);
+export function calculateAutoFields(
+  rules: AutoCalculationRule[], 
+  measurements: Record<string, number>,
+  layoutName?: string
+): Record<string, number> {
+  return CalculationEngine.calculateAutoFields(rules, measurements, layoutName);
 }
 
 // Function to check if a field can be calculated (all dependencies are available)

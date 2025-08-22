@@ -117,9 +117,9 @@ export default function SpecificationPage() {
   const initializeSpecification = () => {
     if (!currentShape?.specification) {
       updateShapeSpecification(currentShapeIndex, {
-        keepCurrentCabinets: '',
+        keepCurrentCabinets: undefined,
         countertopToRemove: '',
-        hasHolesOrCuts: '',
+        hasHolesOrCuts: undefined,
         cutouts: {},
         sinks: {}
       });

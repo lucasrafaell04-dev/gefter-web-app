@@ -1,31 +1,56 @@
-# Gefter Web App - Visão Geral do Projeto
+# Geffter Web App - Project Overview
 
-## Descrição
-Aplicação web para cotação de bancadas de cozinha/banheiro com fluxo de 6 steps: seleção de cômodo, layouts, medidas, materiais, bordas e resumo.
+## Architecture
+The Geffter web app is a Next.js 14 application for customizing and purchasing kitchen countertops online. It features a 10-step workflow with background data preloading for optimal performance.
 
-## Arquitetura Principal
-- **Framework**: Next.js 14 com App Router
-- **Estado**: Zustand com persistência em sessionStorage
-- **Cache**: React Query (TanStack Query) para dados estáticos
-- **Banco**: PostgreSQL via Supabase com Prisma ORM
-- **UI**: Tailwind CSS + Framer Motion
-- **Tipagem**: TypeScript
+## Tech Stack
+- **Frontend**: Next.js 14, React 18, TypeScript
+- **Styling**: Tailwind CSS, Framer Motion
+- **State Management**: Zustand with session persistence
+- **Data Fetching**: React Query (TanStack Query)
+- **Database**: PostgreSQL with Prisma ORM
+- **Backend**: Next.js API Routes
 
-## Fluxo de Navegação (10 Steps)
-1. **HomePage** (Step 1) - Tela inicial com imagens aleatórias
-2. **RoomSelection** (Step 2 of 10) - Kitchen/Bathroom
-3. **LayoutSelection** (Step 3 of 10) - Formas de cozinha
-4. **MeasurementsPage** (Step 4 of 10) - Medidas das formas
-5. **SpecificationPage** (Step 5 of 10) - Especificações de instalação
-6. **MaterialSelection** (Step 6 of 10) - Materiais disponíveis
-7. **EdgeSelection** (Step 7 of 10) - Estilos de borda
-8. **LeadInfoPage** (Step 8 of 10) - Informações pessoais
-9. **LeadAddressPage** (Step 9 of 10) - Informações de endereço
-10. **ProjectSummary** (Step 10 of 10) - Resumo final com preços
+## Core Workflow (10 Steps)
+1. **Homepage** - Background data preloading starts immediately
+2. **Room Selection** - Choose kitchen type
+3. **Layout Selection** - Select kitchen layout shapes
+4. **Measurements** - Input dimensions for each shape
+5. **Specification** - Configure cutouts, sinks, and options
+6. **Material Selection** - Choose countertop material
+7. **Edge Selection** - Select edge styles
+8. **Lead Info** - Collect user personal information
+9. **Lead Address** - Collect user address information
+10. **Project Summary** - Review and purchase
 
-## Componentes Principais
-- [app/page.tsx](mdc:app/page.tsx) - Roteamento principal
-- [store/useProjectStore.ts](mdc:store/useProjectStore.ts) - Estado global
-- [hooks/useApiCache.ts](mdc:hooks/useApiCache.ts) - Cache de dados
-- [services/apiService.ts](mdc:services/apiService.ts) - Chamadas API
-- [types/index.ts](mdc:types/index.ts) - Tipos TypeScript
+## Key Features
+- **Background Data Preloading**: All data fetched silently on homepage load
+- **Multi-Shape Support**: Handle multiple kitchen layouts (L-Shape, U-Shape, etc.)
+- **Dynamic SVG Diagrams**: Visual representation of layouts with measurements
+- **Auto-Calculations**: Automatic area calculations and field dependencies
+- **Lead Management**: User information collection and storage
+- **Real-time Validation**: Form validation throughout the journey
+
+## File Structure
+- `app/` - Next.js app router pages and API routes
+- `components/` - React components for each step
+- `services/` - API services and data preloading
+- `store/` - Zustand state management
+- `hooks/` - Custom React hooks for data fetching
+- `types/` - TypeScript type definitions
+- `utils/` - Utility functions and calculations
+- `prisma/` - Database schema and migrations
+
+## Data Flow
+1. Background preloading fetches all data on homepage load
+2. Data stored in Zustand store with session persistence
+3. Components use preloaded data via React Query hooks
+4. User interactions update state and trigger calculations
+5. Final data submitted for quote generation
+
+## Performance Optimizations
+- Background data preloading eliminates loading delays
+- React Query caching reduces API calls
+- SVG preloading prevents layout shifts
+- Parallel data fetching for maximum speed
+- Graceful fallback to individual API calls if needed

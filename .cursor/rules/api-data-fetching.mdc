@@ -1,0 +1,84 @@
+# API Data Fetching & Caching
+
+## Architecture Overview
+- **API Routes**: Next.js API routes in `app/api/`
+- **Service Layer**: [services/apiService.ts](mdc:services/apiService.ts) for API calls
+- **Cache Layer**: [hooks/useApiCache.ts](mdc:hooks/useApiCache.ts) with React Query
+- **Preloading**: [services/dataPreloader.ts](mdc:services/dataPreloader.ts) for background loading
+
+## API Endpoints
+- `/api/layouts` - Get all kitchen layouts
+- `/api/materials` - Get all countertop materials
+- `/api/edge-styles` - Get all edge styles
+- `/api/layout-fields/[layoutId]` - Get measurement fields for layout
+- `/api/auto-calculation-rules/[layoutId]` - Get calculation rules
+- `/api/layout-field-groups/[layoutId]` - Get field groups
+
+## React Query Hooks
+```typescript
+// Basic usage
+const { data: layouts, isLoading, error } = useLayouts();
+const { data: fields } = useLayoutFields(layoutId);
+const { data: materials } = useMaterials();
+const { data: edgeStyles } = useEdgeStyles();
+```
+
+## Preloaded Data Priority
+All hooks automatically use preloaded data when available:
+```typescript
+// Hook implementation
+queryFn: async () => {
+  const preloadedData = dataPreloader.getPreloadedData();
+  if (preloadedData) {
+    return preloadedData.layouts; // Use preloaded data
+  }
+  return apiService.getLayouts(); // Fallback to API
+}
+```
+
+## Cache Configuration
+- **Stale Time**: 1-2 hours for static data
+- **GC Time**: 24 hours for garbage collection
+- **Enabled**: Conditional based on required parameters
+
+## Error Handling
+```typescript
+// Service layer error handling
+try {
+  const response = await fetch('/api/layouts');
+  if (!response.ok) {
+    throw new Error('Failed to fetch layouts');
+  }
+  return await response.json();
+} catch (error) {
+  console.error('Error fetching layouts:', error);
+  return []; // Return empty array as fallback
+}
+```
+
+## Background Preloading
+- Starts immediately when homepage loads
+- Fetches all data in parallel
+- Stores in Zustand store via callback
+- Completely invisible to users
+
+## Performance Patterns
+- **Parallel Fetching**: Multiple API calls in parallel
+- **Conditional Fetching**: Only fetch when needed
+- **Caching**: React Query handles cache invalidation
+- **Fallback**: Graceful degradation if preloading fails
+
+## Type Safety
+All API responses are typed with TypeScript interfaces:
+```typescript
+interface Layout {
+  id: string;
+  name: string;
+  layout_image: string;
+  // ... other properties
+}
+```
+description:
+globs:
+alwaysApply: false
+---
