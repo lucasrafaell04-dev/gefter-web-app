@@ -6,6 +6,7 @@ import HomePage from '@/components/HomePage';
 import RoomSelection from '@/components/RoomSelection';
 import LayoutSelection from '@/components/LayoutSelection';
 import MeasurementsPage from '@/components/MeasurementsPage';
+import SpecificationPage from '@/components/SpecificationPage';
 import MaterialSelection from '@/components/MaterialSelection';
 import EdgeSelection from '@/components/EdgeSelection';
 import ProjectSummary from '@/components/ProjectSummary';
@@ -36,10 +37,12 @@ export default function Home() {
       case 4:
         return <MeasurementsPage />;
       case 5:
-        return <MaterialSelection />;
+        return <SpecificationPage />;
       case 6:
-        return <EdgeSelection />;
+        return <MaterialSelection />;
       case 7:
+        return <EdgeSelection />;
+      case 8:
         return <ProjectSummary />;
       default:
         return <HomePage />;

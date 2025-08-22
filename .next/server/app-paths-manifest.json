@@ -1,1 +1,5 @@
-{}
+{
+  "/api/materials/route": "app/api/materials/route.js",
+  "/api/edge-styles/route": "app/api/edge-styles/route.js",
+  "/page": "app/page.js"
+}

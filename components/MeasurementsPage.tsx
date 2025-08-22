@@ -394,7 +394,7 @@ export default function MeasurementsPage() {
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 py-8 pb-32">
         {/* Step Indicator */}
-        <div className="text-sm text-gray-500 mb-4">Step 4 of 6</div>
+        <div className="text-sm text-gray-500 mb-4">Step 4 of 8</div>
 
         {/* Progress Indicator */}
         <div className="mb-6">

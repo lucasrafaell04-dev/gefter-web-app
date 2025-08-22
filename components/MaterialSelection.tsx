@@ -55,7 +55,7 @@ export default function MaterialSelection() {
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 py-8 pb-32">
         {/* Step Indicator */}
-        <div className="text-sm text-gray-500 mb-4">Step 5 of 6</div>
+        <div className="text-sm text-gray-500 mb-4">Step 6 of 8</div>
 
         {/* Question */}
         <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-8">

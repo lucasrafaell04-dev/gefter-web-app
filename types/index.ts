@@ -115,6 +115,37 @@ export interface QuoteItem {
   layout_id: string;
 }
 
+// Specification types for the new step
+export interface CutoutOption {
+  id: string;
+  name: string;
+  description: string;
+  image: string;
+  included: boolean;
+  price?: number;
+}
+
+export interface SinkOption {
+  id: string;
+  name: string;
+  description: string;
+  image: string;
+  price: number;
+  included: boolean;
+}
+
+export interface ShapeSpecification {
+  keepCurrentCabinets?: 'yes' | 'no';
+  countertopToRemove?: string;
+  hasHolesOrCuts?: 'yes' | 'no';
+  cutouts: {
+    [cutoutId: string]: number; // cutoutId -> quantity
+  };
+  sinks: {
+    [sinkId: string]: number; // sinkId -> quantity
+  };
+}
+
 // Application state types
 export interface SelectedShape {
   layout: Layout;
@@ -122,6 +153,7 @@ export interface SelectedShape {
   wallToggles: Record<string, boolean>;
   hasBacksplash: boolean;
   backsplashHeight?: number;
+  specification?: ShapeSpecification;
 }
 
 export interface ProjectState {

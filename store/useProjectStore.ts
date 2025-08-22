@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { ProjectState, SelectedShape, Material, EdgeStyle, RoomType } from '@/types';
+import { ProjectState, SelectedShape, Material, EdgeStyle, RoomType, ShapeSpecification } from '@/types';
 
 interface ProjectStore extends ProjectState {
   // Actions
@@ -10,6 +10,9 @@ interface ProjectStore extends ProjectState {
   updateShapeMeasurements: (shapeIndex: number, measurements: Record<string, number>) => void;
   updateShapeWallToggles: (shapeIndex: number, wallToggles: Record<string, boolean>) => void;
   setShapeBacksplash: (shapeIndex: number, hasBacksplash: boolean, height?: number) => void;
+  updateShapeSpecification: (shapeIndex: number, specification: Partial<ShapeSpecification>) => void;
+  updateShapeCutoutQuantity: (shapeIndex: number, cutoutId: string, quantity: number) => void;
+  updateShapeSinkQuantity: (shapeIndex: number, sinkId: string, quantity: number) => void;
   setSelectedMaterial: (material: Material) => void;
   setSelectedEdgeStyle: (edgeStyle: EdgeStyle) => void;
   setCurrentStep: (step: number) => void;
@@ -25,7 +28,7 @@ const initialState: ProjectState = {
   selectedMaterial: null,
   selectedEdgeStyle: null,
   currentStep: 1,
-  totalSteps: 6,
+  totalSteps: 8, // Updated to include specification step
 };
 
 export const useProjectStore = create<ProjectStore>()(
@@ -105,6 +108,60 @@ export const useProjectStore = create<ProjectStore>()(
           return { selectedShapes: newShapes };
         }),
 
+      updateShapeSpecification: (shapeIndex, specification) =>
+        set((state) => {
+          const newShapes = [...state.selectedShapes];
+          const currentShape = newShapes[shapeIndex];
+          
+          newShapes[shapeIndex] = {
+            ...currentShape,
+            specification: {
+              ...currentShape.specification,
+              ...specification
+            }
+          };
+          
+          return { selectedShapes: newShapes };
+        }),
+
+      updateShapeCutoutQuantity: (shapeIndex, cutoutId, quantity) =>
+        set((state) => {
+          const newShapes = [...state.selectedShapes];
+          const currentShape = newShapes[shapeIndex];
+          
+          newShapes[shapeIndex] = {
+            ...currentShape,
+            specification: {
+              ...currentShape.specification,
+              cutouts: {
+                ...currentShape.specification?.cutouts,
+                [cutoutId]: quantity
+              }
+            }
+          };
+          
+          return { selectedShapes: newShapes };
+        }),
+
+      updateShapeSinkQuantity: (shapeIndex, sinkId, quantity) =>
+        set((state) => {
+          const newShapes = [...state.selectedShapes];
+          const currentShape = newShapes[shapeIndex];
+          
+          newShapes[shapeIndex] = {
+            ...currentShape,
+            specification: {
+              ...currentShape.specification,
+              sinks: {
+                ...currentShape.specification?.sinks,
+                [sinkId]: quantity
+              }
+            }
+          };
+          
+          return { selectedShapes: newShapes };
+        }),
+
       setSelectedMaterial: (material) => set({ selectedMaterial: material }),
 
       setSelectedEdgeStyle: (edgeStyle) => set({ selectedEdgeStyle: edgeStyle }),
@@ -174,6 +231,23 @@ export const useProjectStore = create<ProjectStore>()(
               }
             });
             total += edgeLength * selectedEdgeStyle.price_per_linear_ft;
+          }
+
+          // Add specification costs (cutouts, sinks, etc.)
+          if (shape.specification) {
+            // Add cutout costs
+            Object.entries(shape.specification.cutouts || {}).forEach(([cutoutId, quantity]) => {
+              // This would be calculated based on actual cutout pricing
+              // For now, we'll add a placeholder cost
+              total += quantity * 50; // $50 per cutout
+            });
+
+            // Add sink costs
+            Object.entries(shape.specification.sinks || {}).forEach(([sinkId, quantity]) => {
+              // This would be calculated based on actual sink pricing
+              // For now, we'll add a placeholder cost
+              total += quantity * 200; // $200 per sink
+            });
           }
         });
 
