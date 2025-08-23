@@ -159,13 +159,34 @@ export interface LeadInfo {
 }
 
 // Application state types
+export interface WallToggles {
+  // Standard wall toggles for all layouts
+  [fieldName: string]: boolean | undefined;
+  // Special wall toggles for Island and SingleWall
+  wallOnLeft?: boolean;
+  wallOnRight?: boolean;
+}
+
 export interface SelectedShape {
   layout: Layout;
   measurements: Record<string, number>;
-  wallToggles: Record<string, boolean>;
+  wallToggles: WallToggles;
   hasBacksplash: boolean;
   backsplashHeight?: number;
   specification?: ShapeSpecification;
+}
+
+export interface EdgeCalculation {
+  linearFeet: number;
+  edgePrice: number;
+  totalEdgeCost: number;
+  excludedWalls: string[];
+}
+
+export interface MaterialCalculation {
+  squareFeet: number;
+  materialPrice: number;
+  totalMaterialCost: number;
 }
 
 export interface ProjectState {

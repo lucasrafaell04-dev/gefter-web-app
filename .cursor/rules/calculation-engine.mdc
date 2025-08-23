@@ -14,6 +14,25 @@ calculateUShapeArea(measurements: Record<string, number>): number
 calculateIslandArea(measurements: Record<string, number>): number
 ```
 
+### Edge Calculations
+```typescript
+// Calculate linear feet for edge, excluding wall measurements
+calculateEdgeLinearFeet(
+  measurements: Record<string, number>,
+  wallToggles: WallToggles,
+  layoutName: string
+): EdgeCalculation
+
+// Calculate total edge cost
+calculateEdgeCost(edgeCalculation: EdgeCalculation, edgeStyle: EdgeStyle): EdgeCalculation
+```
+
+### Material Calculations
+```typescript
+// Calculate material cost based on area
+calculateMaterialCost(squareFeet: number, material: Material): MaterialCalculation
+```
+
 ### Auto-Calculated Fields
 ```typescript
 // Apply auto-calculation rules including layout-specific rules
@@ -41,6 +60,19 @@ The engine handles both `camelCase` and `snake_case` field names:
 const widthA = measurements['widthA'] || measurements['width_a'] || 0;
 const depthA = measurements['depthA'] || measurements['depth_a'] || 0;
 ```
+
+## Wall Toggle System
+
+### Standard Wall Toggles
+- **All layouts**: Individual field wall toggles (e.g., `widthA`, `depthB`)
+- **Purpose**: Mark measurements that are against walls
+- **Effect**: Excluded from edge linear feet calculations
+
+### Special Wall Toggles (Island & SingleWall)
+- **Layouts**: Island and SingleWall only
+- **Toggles**: "Wall on Left" and "Wall on Right"
+- **Purpose**: Indicate which sides of the countertop are against walls
+- **Effect**: Used for edge calculation exclusions
 
 ## Layout-Specific Calculations
 

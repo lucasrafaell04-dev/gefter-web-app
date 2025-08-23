@@ -333,6 +333,7 @@ export default function MeasurementsPage() {
   }, [currentShape.measurements, currentShape.layout, autoCalculationRules, currentShapeIndex, updateShapeMeasurements]);
 
   const handleWallToggle = useCallback((fieldName: string, isWall: boolean) => {
+    console.log('🔧 Wall Toggle:', fieldName, isWall);
     updateShapeWallToggles(currentShapeIndex, { [fieldName]: isWall });
   }, [currentShapeIndex, updateShapeWallToggles]);
 
@@ -372,6 +373,10 @@ export default function MeasurementsPage() {
   // Calculate initial square feet when current shape changes
   useEffect(() => {
     if (currentShape && currentShape.measurements) {
+      console.log('🔧 Current Shape:', currentShape.layout.name, {
+        measurements: Object.keys(currentShape.measurements),
+        wallToggles: Object.keys(currentShape.wallToggles)
+      });
       const squareFeet = CalculationEngine.calculateSquareFeet(currentShape.layout, currentShape.measurements);
       setSquareFeetValue(squareFeet);
     }
@@ -497,7 +502,10 @@ export default function MeasurementsPage() {
                     </label>
                     <div className="flex items-center gap-4">
                       {/* Wall Toggle - only show if layout supports wall toggles */}
-                      {currentShape.layout.supports_wall_toggle && (
+                      {/* Standard Wall Toggle (for all layouts except Island/SingleWall Depth A) */}
+                      {currentShape.layout.supports_wall_toggle && 
+                       !((currentShape.layout.name === 'Island' || currentShape.layout.name === 'SingleWall') && 
+                         field.field_name === 'depthA') && (
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-gray-600">Wall</span>
                           <button
@@ -516,6 +524,51 @@ export default function MeasurementsPage() {
                               }`}
                             />
                           </button>
+                        </div>
+                      )}
+
+                      {/* Special Wall Toggles for Island and SingleWall Depth A */}
+                      {(currentShape.layout.name === 'Island' || currentShape.layout.name === 'SingleWall') && 
+                       field.field_name === 'depthA' && (
+                        <div className="flex gap-4 mt-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-gray-600">Wall on Left</span>
+                            <button
+                              onClick={() => handleWallToggle('wallOnLeft', !currentShape.wallToggles.wallOnLeft)}
+                              className={`w-12 h-6 rounded-full transition-colors ${
+                                currentShape.wallToggles.wallOnLeft 
+                                  ? 'bg-blue-500' 
+                                  : 'bg-gray-300'
+                              }`}
+                            >
+                              <div 
+                                className={`w-5 h-5 bg-white rounded-full transition-transform ${
+                                  currentShape.wallToggles.wallOnLeft 
+                                    ? 'translate-x-6' 
+                                    : 'translate-x-0.5'
+                                }`}
+                              />
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-gray-600">Wall on Right</span>
+                            <button
+                              onClick={() => handleWallToggle('wallOnRight', !currentShape.wallToggles.wallOnRight)}
+                              className={`w-12 h-6 rounded-full transition-colors ${
+                                currentShape.wallToggles.wallOnRight 
+                                  ? 'bg-blue-500' 
+                                  : 'bg-gray-300'
+                              }`}
+                            >
+                              <div 
+                                className={`w-5 h-5 bg-white rounded-full transition-transform ${
+                                  currentShape.wallToggles.wallOnRight 
+                                    ? 'translate-x-6' 
+                                    : 'translate-x-0.5'
+                                }`}
+                              />
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>

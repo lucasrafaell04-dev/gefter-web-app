@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { ProjectState, SelectedShape, Material, EdgeStyle, RoomType, ShapeSpecification, LeadInfo } from '@/types';
 import { PreloadedData } from '@/services/dataPreloader';
+import { CalculationEngine } from '@/utils/calculations';
 
 interface ProjectStore extends ProjectState {
   // Preloaded data
@@ -207,48 +208,23 @@ export const useProjectStore = create<ProjectStore>()(
         let total = 0;
 
         selectedShapes.forEach((shape) => {
-          // Calculate area for each shape
-          const measurements = shape.measurements;
-          let area = 0;
-
-          // Convert inches to feet for area calculations (inputs are in inches)
-          const inchesToFeet = (value: number) => value / 12;
-
-          // Basic area calculation (values provided in inches)
-          if (shape.layout.layout_type === 'L-shape') {
-            const widthA = inchesToFeet(measurements['width_a'] || 0);
-            const widthB = inchesToFeet(measurements['width_b'] || 0);
-            const depthA = inchesToFeet(measurements['depth_a'] || 0);
-            const depthB = inchesToFeet(measurements['depth_b'] || 0);
-            area = (widthA * depthA) + (widthB * depthB);
-          } else if (shape.layout.layout_type === 'U-shape') {
-            const widthA = inchesToFeet(measurements['width_a'] || 0);
-            const widthB = inchesToFeet(measurements['width_b'] || 0);
-            const widthC = inchesToFeet(measurements['width_c'] || 0);
-            const depth = inchesToFeet(measurements['depth'] || 0);
-            area = (widthA + widthB + widthC) * depth;
-          }
-
-          // Add backsplash area if enabled
-          if (shape.hasBacksplash && shape.backsplashHeight) {
-            const perimeterInFeet = Object.values(measurements).reduce((sum, val) => sum + (val || 0), 0) / 12;
-            area += perimeterInFeet * (shape.backsplashHeight / 12); // Convert inches to feet
-          }
-
+          // Use the CalculationEngine for consistent calculations
+          const squareFeet = CalculationEngine.calculateSquareFeet(shape.layout, shape.measurements);
+          
           // Calculate material cost
           if (selectedMaterial) {
-            total += area * selectedMaterial.price_per_sqft;
+            total += squareFeet * selectedMaterial.price_per_sqft;
           }
 
-          // Calculate edge cost (only for non-wall measurements)
+          // Calculate edge cost using the same logic as ProjectSummary
           if (selectedEdgeStyle) {
-            let edgeLength = 0;
-            Object.entries(shape.wallToggles).forEach(([field, isWall]) => {
-              if (!isWall && measurements[field]) {
-                edgeLength += (measurements[field] || 0) / 12; // inches to feet
-              }
-            });
-            total += edgeLength * selectedEdgeStyle.price_per_linear_ft;
+            const edgeCalculation = CalculationEngine.calculateEdgeLinearFeet(
+              shape.measurements, 
+              shape.wallToggles, 
+              shape.layout.name
+            );
+            const finalEdgeCalculation = CalculationEngine.calculateEdgeCost(edgeCalculation, selectedEdgeStyle);
+            total += finalEdgeCalculation.totalEdgeCost;
           }
 
           // Add specification costs (cutouts, sinks, etc.)

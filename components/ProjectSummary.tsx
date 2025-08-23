@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Check, Download, Share2, Printer, ChevronDown, ChevronRight } from 'lucide-react';
 import { useProjectStore } from '@/store/useProjectStore';
 import { useState } from 'react';
+import { CalculationEngine } from '@/utils/calculations';
 
 export default function ProjectSummary() {
   const [expandedShapes, setExpandedShapes] = useState<Set<number>>(new Set());
@@ -30,6 +31,31 @@ export default function ProjectSummary() {
   };
 
   const totalPrice = calculateTotalPrice();
+
+  // Calculate edge and material costs for each shape
+  const shapeCalculations = selectedShapes.map(shape => {
+    const squareFeet = CalculationEngine.calculateSquareFeet(shape.layout, shape.measurements);
+    const edgeCalculation = CalculationEngine.calculateEdgeLinearFeet(
+      shape.measurements, 
+      shape.wallToggles, 
+      shape.layout.name
+    );
+    
+    const materialCalculation = selectedMaterial 
+      ? CalculationEngine.calculateMaterialCost(squareFeet, selectedMaterial)
+      : { squareFeet, materialPrice: 0, totalMaterialCost: 0 };
+    
+    const finalEdgeCalculation = selectedEdgeStyle 
+      ? CalculationEngine.calculateEdgeCost(edgeCalculation, selectedEdgeStyle)
+      : edgeCalculation;
+
+    return {
+      shape,
+      squareFeet,
+      edgeCalculation: finalEdgeCalculation,
+      materialCalculation
+    };
+  });
 
   const handleStartNewProject = () => {
     resetProject();
@@ -87,6 +113,8 @@ export default function ProjectSummary() {
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 py-8">
+
+
         {/* Success Message */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -269,6 +297,59 @@ export default function ProjectSummary() {
                             </div>
                           </div>
                         )}
+
+                        {/* Calculations */}
+                        <div className="border-t border-gray-200 pt-3">
+                          <h5 className="text-sm font-medium text-gray-800 mb-2">Calculations:</h5>
+                          <div className="space-y-2 text-sm">
+                            {/* Square Feet */}
+                            <div className="flex justify-between">
+                              <span className="text-gray-700">Square Feet:</span>
+                              <span className="font-medium text-gray-900">
+                                {shapeCalculations[index].squareFeet.toFixed(3)} sq ft
+                              </span>
+                            </div>
+
+                            {/* Material Cost */}
+                            {selectedMaterial && (
+                              <div className="flex justify-between">
+                                <span className="text-gray-700">Material Cost:</span>
+                                <span className="font-medium text-gray-900">
+                                  ${shapeCalculations[index].materialCalculation.totalMaterialCost.toFixed(2)}
+                                  <span className="text-gray-500 text-xs ml-1">
+                                    ({shapeCalculations[index].materialCalculation.squareFeet.toFixed(3)} sq ft × ${selectedMaterial.price_per_sqft}/sq ft)
+                                  </span>
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Edge Linear Feet */}
+                            <div className="flex justify-between">
+                              <span className="text-gray-700">Edge Linear Feet:</span>
+                              <span className="font-medium text-gray-900">
+                                {shapeCalculations[index].edgeCalculation.linearFeet.toFixed(3)} ft
+                                {shapeCalculations[index].edgeCalculation.excludedWalls.length > 0 && (
+                                  <span className="text-gray-500 text-xs ml-1">
+                                    (excludes: {shapeCalculations[index].edgeCalculation.excludedWalls.join(', ')})
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+
+                            {/* Edge Cost */}
+                            {selectedEdgeStyle && (
+                              <div className="flex justify-between">
+                                <span className="text-gray-700">Edge Cost:</span>
+                                <span className="font-medium text-gray-900">
+                                  ${shapeCalculations[index].edgeCalculation.totalEdgeCost.toFixed(2)}
+                                  <span className="text-gray-500 text-xs ml-1">
+                                    ({shapeCalculations[index].edgeCalculation.linearFeet.toFixed(3)} ft × ${selectedEdgeStyle.price_per_linear_ft}/ft)
+                                  </span>
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </motion.div>
                     )}
                     </AnimatePresence>
@@ -307,24 +388,7 @@ export default function ProjectSummary() {
                   </div>
                 </div>
                 
-                {/* Edge Application Details */}
-                <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                  <h5 className="text-sm font-medium text-blue-800 mb-2">Edge Application:</h5>
-                  <div className="text-sm text-blue-700">
-                    {selectedShapes.map((shape, index) => {
-                      const nonWallEdges = Object.entries(shape.wallToggles || {})
-                        .filter(([field, isWall]) => !isWall && shape.measurements[field])
-                        .map(([field, _]) => `${field}: ${shape.measurements[field]}"`)
-                        .join(', ');
-                      
-                      return nonWallEdges ? (
-                        <div key={index} className="mb-1">
-                          <span className="font-medium">{shape.layout.name}:</span> {nonWallEdges}
-                        </div>
-                      ) : null;
-                    })}
-                  </div>
-                </div>
+
               </div>
             )}
           </div>
@@ -351,23 +415,23 @@ export default function ProjectSummary() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-gray-600">Name:</span>
-                <span className="ml-2 font-medium">{leadInfo.fullName}</span>
+                <span className="ml-2 font-medium text-gray-900">{leadInfo.fullName}</span>
               </div>
               <div>
                 <span className="text-gray-600">Email:</span>
-                <span className="ml-2 font-medium">{leadInfo.email}</span>
+                <span className="ml-2 font-medium text-gray-900">{leadInfo.email}</span>
               </div>
               <div>
                 <span className="text-gray-600">Phone:</span>
-                <span className="ml-2 font-medium">{leadInfo.phone}</span>
+                <span className="ml-2 font-medium text-gray-900">{leadInfo.phone}</span>
               </div>
               <div>
                 <span className="text-gray-600">Address:</span>
-                <span className="ml-2 font-medium">{leadInfo.streetAddress}</span>
+                <span className="ml-2 font-medium text-gray-900">{leadInfo.streetAddress}</span>
               </div>
               <div>
                 <span className="text-gray-600">City:</span>
-                <span className="ml-2 font-medium">{leadInfo.city}, {leadInfo.state} {leadInfo.zipCode}</span>
+                <span className="ml-2 font-medium text-gray-900">{leadInfo.city}, {leadInfo.state} {leadInfo.zipCode}</span>
               </div>
             </div>
           </div>
