@@ -10,7 +10,8 @@ interface ProjectStore extends ProjectState {
   
   // Actions
   setPreloadedData: (data: PreloadedData) => void;
-  setSelectedRoom: (room: RoomType) => void;
+  setSelectedEnvironments: (environments: ('kitchen' | 'bathroom')[]) => void;
+  toggleEnvironment: (environment: 'kitchen' | 'bathroom') => void;
   addSelectedShape: (shape: SelectedShape) => void;
   removeSelectedShape: (index: number) => void;
   updateShapeMeasurements: (shapeIndex: number, measurements: Record<string, number>) => void;
@@ -28,10 +29,11 @@ interface ProjectStore extends ProjectState {
   previousStep: () => void;
   resetProject: () => void;
   calculateTotalPrice: () => number;
+  calculatePriceByEnvironment: () => { kitchen: number; bathroom: number; total: number };
 }
 
 const initialState: ProjectState = {
-  selectedRoom: null,
+  selectedEnvironments: [],
   selectedShapes: [],
   selectedMaterial: null,
   selectedEdgeStyle: null,
@@ -48,7 +50,23 @@ export const useProjectStore = create<ProjectStore>()(
 
       setPreloadedData: (data) => set({ preloadedData: data }),
 
-      setSelectedRoom: (room) => set({ selectedRoom: room }),
+      setSelectedEnvironments: (environments) => set({ selectedEnvironments: environments }),
+
+      toggleEnvironment: (environment) => set((state) => {
+        const currentEnvironments = state.selectedEnvironments;
+        const isSelected = currentEnvironments.includes(environment);
+        
+        if (isSelected) {
+          return { 
+            selectedEnvironments: currentEnvironments.filter(env => env !== environment),
+            selectedShapes: state.selectedShapes.filter(shape => shape.environment !== environment)
+          };
+        } else {
+          return { 
+            selectedEnvironments: [...currentEnvironments, environment]
+          };
+        }
+      }),
 
       addSelectedShape: (shape) => 
         set((state) => ({ 
@@ -246,6 +264,50 @@ export const useProjectStore = create<ProjectStore>()(
         });
 
         return total;
+      },
+
+      // New method to calculate price by environment
+      calculatePriceByEnvironment: () => {
+        const { selectedShapes, selectedMaterial, selectedEdgeStyle } = get();
+        const kitchenShapes = selectedShapes.filter(shape => shape.environment === 'kitchen');
+        const bathroomShapes = selectedShapes.filter(shape => shape.environment === 'bathroom');
+        
+        const calculateEnvironmentTotal = (shapes: SelectedShape[]) => {
+          let total = 0;
+          shapes.forEach((shape) => {
+            const squareFeet = CalculationEngine.calculateSquareFeet(shape.layout, shape.measurements);
+            
+            if (selectedMaterial) {
+              total += squareFeet * selectedMaterial.price_per_sqft;
+            }
+
+            if (selectedEdgeStyle) {
+              const edgeCalculation = CalculationEngine.calculateEdgeLinearFeet(
+                shape.measurements, 
+                shape.wallToggles, 
+                shape.layout.name
+              );
+              const finalEdgeCalculation = CalculationEngine.calculateEdgeCost(edgeCalculation, selectedEdgeStyle);
+              total += finalEdgeCalculation.totalEdgeCost;
+            }
+
+            if (shape.specification) {
+              Object.entries(shape.specification.cutouts || {}).forEach(([cutoutId, quantity]) => {
+                total += quantity * 50;
+              });
+              Object.entries(shape.specification.sinks || {}).forEach(([sinkId, quantity]) => {
+                total += quantity * 200;
+              });
+            }
+          });
+          return total;
+        };
+
+        return {
+          kitchen: calculateEnvironmentTotal(kitchenShapes),
+          bathroom: calculateEnvironmentTotal(bathroomShapes),
+          total: calculateEnvironmentTotal(selectedShapes)
+        };
       },
     }),
     {

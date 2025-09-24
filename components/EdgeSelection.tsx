@@ -189,7 +189,7 @@ export default function EdgeSelection() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Room Type:</span>
-                  <span className="font-medium">{useProjectStore.getState().selectedRoom || 'Kitchen'}</span>
+                  <span className="font-medium">{useProjectStore.getState().selectedEnvironments.join(', ') || 'Kitchen'}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Selected Layouts:</span>

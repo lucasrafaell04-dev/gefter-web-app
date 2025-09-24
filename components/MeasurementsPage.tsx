@@ -671,9 +671,7 @@ export default function MeasurementsPage() {
             className="bg-white rounded-xl p-6 shadow-sm mb-8"
           >
             <div className="flex items-center justify-between mb-4">
-              <label className="text-lg font-medium text-gray-800">
-                Square Feet
-              </label>
+              {/* Square feet label removed as requested */}
             </div>
             
             <div className="flex items-center space-x-2">
@@ -736,7 +734,7 @@ export default function MeasurementsPage() {
                   type="number"
                   step="0.5"
                   min="1"
-                  max="24"
+                  max="20"
                   value={currentShape.backsplashHeight || 4}
                   onChange={(e) => setShapeBacksplash(currentShapeIndex, true, parseFloat(e.target.value) || 4)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"

@@ -169,6 +169,7 @@ export interface WallToggles {
 
 export interface SelectedShape {
   layout: Layout;
+  environment: 'kitchen' | 'bathroom';
   measurements: Record<string, number>;
   wallToggles: WallToggles;
   hasBacksplash: boolean;
@@ -190,7 +191,7 @@ export interface MaterialCalculation {
 }
 
 export interface ProjectState {
-  selectedRoom: 'kitchen' | 'bathroom' | null;
+  selectedEnvironments: ('kitchen' | 'bathroom')[];
   selectedShapes: SelectedShape[];
   selectedMaterial: Material | null;
   selectedEdgeStyle: EdgeStyle | null;

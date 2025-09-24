@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Info, Check, Plus, ChevronUp, X, Minus } from 'lucide-react';
 import { useProjectStore } from '@/store/useProjectStore';
 import { Layout } from '@/types';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { getShapePngImage } from '@/data/shapeImageMap';
 import Image from 'next/image';
 import { useLayouts } from '@/hooks/useApiCache';
@@ -12,12 +12,24 @@ import { useLayouts } from '@/hooks/useApiCache';
 export default function LayoutSelection() {
   // Selective subscriptions to prevent unnecessary re-renders
   const selectedShapes = useProjectStore(state => state.selectedShapes);
+  const selectedEnvironments = useProjectStore(state => state.selectedEnvironments);
   const addSelectedShape = useProjectStore(state => state.addSelectedShape);
   const removeSelectedShape = useProjectStore(state => state.removeSelectedShape);
   const nextStep = useProjectStore(state => state.nextStep);
   const previousStep = useProjectStore(state => state.previousStep);
   const calculateTotalPrice = useProjectStore(state => state.calculateTotalPrice);
+  const calculatePriceByEnvironment = useProjectStore(state => state.calculatePriceByEnvironment);
   const [showProjectSummary, setShowProjectSummary] = useState(false);
+  const [activeTab, setActiveTab] = useState<'kitchen' | 'bathroom'>('kitchen');
+  
+  // Set active tab to the first selected environment if only one is selected
+  React.useEffect(() => {
+    if (selectedEnvironments.length === 1) {
+      setActiveTab(selectedEnvironments[0]);
+    } else if (selectedEnvironments.length > 1 && !selectedEnvironments.includes(activeTab)) {
+      setActiveTab(selectedEnvironments[0]);
+    }
+  }, [selectedEnvironments, activeTab]);
   
   // Use cache hook instead of manual fetch
   const { data: layouts = [], isLoading: loading, error } = useLayouts();
@@ -25,6 +37,7 @@ export default function LayoutSelection() {
   const handleAddShape = (layout: Layout) => {
     const newShape = {
       layout,
+      environment: activeTab,
       measurements: {},
       wallToggles: {},
       hasBacksplash: false,
@@ -33,8 +46,15 @@ export default function LayoutSelection() {
   };
 
   const handleRemoveShape = (layout: Layout) => {
-    // Find the last occurrence of this shape type and remove it
-    const shapeIndex = selectedShapes.findIndex(shape => shape.layout.id === layout.id);
+    // Find the last occurrence of this shape type for the current environment and remove it
+    let shapeIndex = -1;
+    for (let i = selectedShapes.length - 1; i >= 0; i--) {
+      const shape = selectedShapes[i];
+      if (shape.layout.id === layout.id && shape.environment === activeTab) {
+        shapeIndex = i;
+        break;
+      }
+    }
     if (shapeIndex !== -1) {
       removeSelectedShape(shapeIndex);
     }
@@ -47,11 +67,11 @@ export default function LayoutSelection() {
   };
 
   const isShapeSelected = (layoutId: string) => {
-    return selectedShapes.some(shape => shape.layout.id === layoutId);
+    return selectedShapes.some(shape => shape.layout.id === layoutId && shape.environment === activeTab);
   };
 
   const getShapeCount = (layoutId: string) => {
-    return selectedShapes.filter(shape => shape.layout.id === layoutId).length;
+    return selectedShapes.filter(shape => shape.layout.id === layoutId && shape.environment === activeTab).length;
   };
 
 
@@ -83,8 +103,29 @@ export default function LayoutSelection() {
 
         {/* Question */}
         <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-8">
-          What is the best format for your kitchen?
+          What is the best format for your {activeTab}?
         </h2>
+
+        {/* Environment Tabs */}
+        {selectedEnvironments.length > 1 && (
+          <div className="mb-8">
+            <div className="flex space-x-1 bg-gray-200 p-1 rounded-lg w-fit">
+              {selectedEnvironments.map((environment) => (
+                <button
+                  key={environment}
+                  onClick={() => setActiveTab(environment)}
+                  className={`px-6 py-3 rounded-md font-medium transition-colors ${
+                    activeTab === environment
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  {environment === 'kitchen' ? 'Kitchen' : 'Bathroom'}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Loading State */}
         {loading && (
@@ -219,9 +260,31 @@ export default function LayoutSelection() {
                   <span className="text-gray-600">Selected Shapes:</span>
                   <span className="font-medium">{selectedShapes.length}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Estimated Total:</span>
-                  <span className="font-medium">${calculateTotalPrice().toFixed(2)}</span>
+                
+                {/* Environment-specific pricing */}
+                {selectedEnvironments.length > 1 && (() => {
+                  const environmentPricing = calculatePriceByEnvironment();
+                  return (
+                    <>
+                      {selectedEnvironments.includes('kitchen') && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Kitchen Total:</span>
+                          <span className="font-medium">${environmentPricing.kitchen.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {selectedEnvironments.includes('bathroom') && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Bathroom Total:</span>
+                          <span className="font-medium">${environmentPricing.bathroom.toFixed(2)}</span>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+                
+                <div className="flex justify-between text-sm font-semibold border-t pt-2">
+                  <span className="text-gray-800">Total Estimated:</span>
+                  <span className="font-bold">${calculateTotalPrice().toFixed(2)}</span>
                 </div>
               </div>
             </motion.div>

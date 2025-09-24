@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import { dataPreloader } from '@/services/dataPreloader';
 
 export default function HomePage() {
-  const { setSelectedRoom, nextStep, setPreloadedData } = useProjectStore();
+  const { setSelectedEnvironments, nextStep, setPreloadedData } = useProjectStore();
   const [backgroundImage, setBackgroundImage] = useState('');
 
   // Array of background images
@@ -44,7 +44,7 @@ export default function HomePage() {
   const handleGetStarted = () => {
     // Data is already being preloaded in background
     // Just proceed to next step immediately
-    setSelectedRoom('kitchen'); // Default to kitchen
+    setSelectedEnvironments(['kitchen']); // Default to kitchen
     nextStep();
   };
 

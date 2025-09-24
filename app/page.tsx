@@ -16,17 +16,17 @@ import ProjectSummary from '@/components/ProjectSummary';
 export default function Home() {
   // Selective subscriptions to prevent unnecessary re-renders
   const currentStep = useProjectStore(state => state.currentStep);
-  const selectedRoom = useProjectStore(state => state.selectedRoom);
+  const selectedEnvironments = useProjectStore(state => state.selectedEnvironments);
   const selectedShapes = useProjectStore(state => state.selectedShapes);
   const nextStep = useProjectStore(state => state.nextStep);
   const previousStep = useProjectStore(state => state.previousStep);
 
-  // Auto-advance to room selection if no room is selected
+  // Auto-advance to room selection if no environments are selected
   useEffect(() => {
-    if (currentStep === 1 && !selectedRoom) {
+    if (currentStep === 1 && selectedEnvironments.length === 0) {
       // Stay on homepage
     }
-  }, [currentStep, selectedRoom]);
+  }, [currentStep, selectedEnvironments]);
 
   const renderCurrentStep = () => {
     switch (currentStep) {

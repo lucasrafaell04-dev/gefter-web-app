@@ -6,14 +6,14 @@ import { useProjectStore } from '@/store/useProjectStore';
 import { RoomType } from '@/types';
 
 export default function RoomSelection() {
-  const { selectedRoom, setSelectedRoom, nextStep, previousStep } = useProjectStore();
+  const { selectedEnvironments, toggleEnvironment, nextStep, previousStep } = useProjectStore();
 
-  const handleRoomSelect = (room: RoomType) => {
-    setSelectedRoom(room);
+  const handleRoomToggle = (room: RoomType) => {
+    toggleEnvironment(room);
   };
 
   const handleContinue = () => {
-    if (selectedRoom) {
+    if (selectedEnvironments.length > 0) {
       nextStep();
     }
   };
@@ -74,9 +74,9 @@ export default function RoomSelection() {
               className="relative"
             >
               <button
-                onClick={() => handleRoomSelect(room.type)}
+                onClick={() => handleRoomToggle(room.type)}
                 className={`w-full h-64 md:h-80 rounded-2xl overflow-hidden relative group transition-all duration-300 ${
-                  selectedRoom === room.type
+                  selectedEnvironments.includes(room.type)
                     ? 'ring-4 ring-blue-500 shadow-lg'
                     : 'hover:shadow-md'
                 }`}
@@ -99,7 +99,7 @@ export default function RoomSelection() {
 
                 {/* Selection Indicator */}
                 <div className="absolute bottom-4 right-4">
-                  {selectedRoom === room.type ? (
+                  {selectedEnvironments.includes(room.type) ? (
                     <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
                       <Check className="w-4 h-4 text-white" />
                     </div>
@@ -117,9 +117,9 @@ export default function RoomSelection() {
           <div className="max-w-4xl mx-auto">
             <button
               onClick={handleContinue}
-              disabled={!selectedRoom}
+              disabled={selectedEnvironments.length === 0}
               className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-colors ${
-                selectedRoom
+                selectedEnvironments.length > 0
                   ? 'bg-gray-800 hover:bg-gray-900 text-white'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}

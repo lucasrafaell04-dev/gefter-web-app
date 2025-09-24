@@ -10,12 +10,13 @@ export default function ProjectSummary() {
   const [expandedShapes, setExpandedShapes] = useState<Set<number>>(new Set());
   
   const { 
-    selectedRoom, 
+    selectedEnvironments, 
     selectedShapes, 
     selectedMaterial, 
     selectedEdgeStyle, 
     leadInfo,
     calculateTotalPrice,
+    calculatePriceByEnvironment,
     resetProject,
     setCurrentStep 
   } = useProjectStore();
@@ -69,7 +70,7 @@ export default function ProjectSummary() {
   const handleDownloadQuote = () => {
     // Generate and download quote PDF
     const quoteData = {
-      room: selectedRoom,
+      environments: selectedEnvironments,
       shapes: selectedShapes,
       material: selectedMaterial,
       edgeStyle: selectedEdgeStyle,
@@ -159,7 +160,7 @@ export default function ProjectSummary() {
             <div>
               <h4 className="font-semibold text-gray-800 mb-2">Room Type</h4>
               <div className="bg-gray-50 rounded-lg p-3">
-                <span className="text-gray-700 capitalize">{selectedRoom}</span>
+                <span className="text-gray-700 capitalize">{selectedEnvironments.join(', ')}</span>
               </div>
             </div>
 

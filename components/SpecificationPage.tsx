@@ -32,7 +32,7 @@ const CUTOUT_OPTIONS: CutoutOption[] = [
 const SINK_OPTIONS: SinkOption[] = [
   {
     id: 'free-stainless-sink',
-    name: 'Free Stainless Steel Sink',
+    name: 'Sink Cutout',
     description: 'High-quality stainless steel sink included',
     image: '/assets/images/1-cutout-sink.jpg',
     price: 0,
