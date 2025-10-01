@@ -4,34 +4,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Info, MapPin, Building2 } from 'lucide-react';
 import { useProjectStore } from '@/store/useProjectStore';
-
-const US_STATES = [
-  'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut',
-  'Delaware', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa',
-  'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan',
-  'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire',
-  'New Jersey', 'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio',
-  'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota',
-  'Tennessee', 'Texas', 'Utah', 'Vermont', 'Virginia', 'Washington', 'West Virginia',
-  'Wisconsin', 'Wyoming'
-];
-
-const MAJOR_CITIES = [
-  'New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 'San Antonio',
-  'San Diego', 'Dallas', 'San Jose', 'Austin', 'Jacksonville', 'Fort Worth', 'Columbus',
-  'Charlotte', 'San Francisco', 'Indianapolis', 'Seattle', 'Denver', 'Washington', 'Boston',
-  'El Paso', 'Nashville', 'Detroit', 'Oklahoma City', 'Portland', 'Las Vegas', 'Memphis',
-  'Louisville', 'Baltimore', 'Milwaukee', 'Albuquerque', 'Tucson', 'Fresno', 'Sacramento',
-  'Mesa', 'Kansas City', 'Atlanta', 'Long Beach', 'Colorado Springs', 'Raleigh', 'Miami',
-  'Virginia Beach', 'Omaha', 'Oakland', 'Minneapolis', 'Tulsa', 'Arlington', 'Tampa',
-  'New Orleans', 'Wichita', 'Cleveland', 'Bakersfield', 'Aurora', 'Anaheim', 'Honolulu',
-  'Santa Ana', 'Corpus Christi', 'Riverside', 'Lexington', 'Stockton', 'Henderson',
-  'Saint Paul', 'St. Louis', 'Milwaukee', 'Cincinnati', 'Pittsburgh', 'Anchorage',
-  'Greensboro', 'Plano', 'Newark', 'Durham', 'Lincoln', 'Orlando', 'Chula Vista',
-  'Jersey City', 'Chandler', 'Madison', 'Lubbock', 'Scottsdale', 'Reno', 'Buffalo',
-  'Gilbert', 'Glendale', 'North Las Vegas', 'Winston-Salem', 'Chesapeake', 'Norfolk',
-  'Fremont', 'Garland', 'Irving', 'Hialeah', 'Richmond', 'Boise', 'Spokane', 'Baton Rouge'
-];
+import { zipCodeCache } from '@/lib/zipCodeCache';
 
 export default function LeadAddressPage() {
   // Selective subscriptions to prevent unnecessary re-renders
@@ -42,6 +15,8 @@ export default function LeadAddressPage() {
   const calculateTotalPrice = useProjectStore(state => state.calculateTotalPrice);
   
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isLoadingZipCode, setIsLoadingZipCode] = useState(false);
+  const [zipCodeMessage, setZipCodeMessage] = useState('');
 
   const handleInputChange = (field: string, value: string) => {
     updateLeadInfo({ [field]: value });
@@ -49,6 +24,81 @@ export default function LeadAddressPage() {
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const fetchZipCodeInfo = async (zipCode: string) => {
+    // Only fetch if we have a valid 5-digit ZIP code
+    if (!/^\d{5}$/.test(zipCode)) {
+      return;
+    }
+
+    // Check cache first
+    const cached = zipCodeCache.get(zipCode);
+    if (cached) {
+      updateLeadInfo({
+        city: cached.city,
+        state: cached.state,
+      });
+      setZipCodeMessage('✓ City and state auto-filled (cached)');
+      
+      // Clear the message after 3 seconds
+      setTimeout(() => {
+        setZipCodeMessage('');
+      }, 3000);
+      return;
+    }
+
+    setIsLoadingZipCode(true);
+    setZipCodeMessage('');
+
+    try {
+      const apiKey = '6817SP18V6P5D5M81QHZ';
+      const response = await fetch(
+        `https://api.zip-codes.com/ZipCodesAPI.svc/1.0/QuickGetZipCodeDetails/${zipCode}?key=${apiKey}`
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch ZIP code information');
+      }
+
+      const data = await response.json();
+
+      if (data.City && data.State) {
+        // Auto-fill city and state
+        updateLeadInfo({
+          city: data.City,
+          state: data.State,
+        });
+        
+        // Cache the result for 1 day
+        zipCodeCache.set(zipCode, data.City, data.State);
+        
+        setZipCodeMessage('✓ City and state auto-filled');
+        
+        // Clear the message after 3 seconds
+        setTimeout(() => {
+          setZipCodeMessage('');
+        }, 3000);
+      } else {
+        setZipCodeMessage('ZIP code not found. Please enter city and state manually.');
+      }
+    } catch (error) {
+      console.error('Error fetching ZIP code:', error);
+      setZipCodeMessage('Unable to fetch ZIP code info. Please enter city and state manually.');
+    } finally {
+      setIsLoadingZipCode(false);
+    }
+  };
+
+  const handleZipCodeChange = (value: string) => {
+    // Only allow numbers and limit to 10 characters (for ZIP+4 format)
+    const sanitizedValue = value.replace(/[^\d-]/g, '').slice(0, 10);
+    handleInputChange('zipCode', sanitizedValue);
+
+    // Auto-fetch when user enters 5 digits
+    if (/^\d{5}$/.test(sanitizedValue)) {
+      fetchZipCodeInfo(sanitizedValue);
     }
   };
 
@@ -138,11 +188,101 @@ export default function LeadAddressPage() {
 
         {/* Form */}
         <div className="max-w-md mx-auto space-y-6">
-          {/* Street Address */}
+          {/* Zip Code - First Field */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="space-y-2"
+          >
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Info className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                value={leadInfo?.zipCode || ''}
+                onChange={(e) => handleZipCodeChange(e.target.value)}
+                className={`block w-full pl-10 pr-3 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 ${
+                  errors.zipCode ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="90001"
+                maxLength={10}
+                disabled={isLoadingZipCode}
+              />
+              {isLoadingZipCode && (
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                </div>
+              )}
+            </div>
+            {errors.zipCode && (
+              <p className="text-red-500 text-sm">{errors.zipCode}</p>
+            )}
+            {zipCodeMessage && (
+              <p className={`text-sm ${zipCodeMessage.startsWith('✓') ? 'text-green-600' : 'text-orange-600'}`}>
+                {zipCodeMessage}
+              </p>
+            )}
+          </motion.div>
+
+          {/* City - Read-only, auto-filled from ZIP */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="space-y-2"
+          >
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Building2 className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                value={leadInfo?.city || ''}
+                readOnly
+                className={`block w-full pl-10 pr-3 py-3 border rounded-lg bg-gray-100 text-gray-700 cursor-not-allowed ${
+                  errors.city ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="City (auto-filled from ZIP)"
+              />
+            </div>
+            {errors.city && (
+              <p className="text-red-500 text-sm">{errors.city}</p>
+            )}
+          </motion.div>
+
+          {/* State - Read-only, auto-filled from ZIP */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="space-y-2"
+          >
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <MapPin className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                value={leadInfo?.state || ''}
+                readOnly
+                className={`block w-full pl-10 pr-3 py-3 border rounded-lg bg-gray-100 text-gray-700 cursor-not-allowed ${
+                  errors.state ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="State (auto-filled from ZIP)"
+              />
+            </div>
+            {errors.state && (
+              <p className="text-red-500 text-sm">{errors.state}</p>
+            )}
+          </motion.div>
+
+          {/* Street Address - Manual input */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
             className="space-y-2"
           >
             <div className="relative">
@@ -161,91 +301,6 @@ export default function LeadAddressPage() {
             </div>
             {errors.streetAddress && (
               <p className="text-red-500 text-sm">{errors.streetAddress}</p>
-            )}
-          </motion.div>
-
-          {/* Zip Code */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="space-y-2"
-          >
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Info className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                value={leadInfo?.zipCode || ''}
-                onChange={(e) => handleInputChange('zipCode', e.target.value)}
-                className={`block w-full pl-10 pr-3 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 ${
-                  errors.zipCode ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="90001"
-                maxLength={10}
-              />
-            </div>
-            {errors.zipCode && (
-              <p className="text-red-500 text-sm">{errors.zipCode}</p>
-            )}
-          </motion.div>
-
-          {/* City */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="space-y-2"
-          >
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Building2 className="h-5 w-5 text-gray-400" />
-              </div>
-              <select
-                value={leadInfo?.city || ''}
-                onChange={(e) => handleInputChange('city', e.target.value)}
-                className={`block w-full pl-10 pr-3 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 ${
-                  errors.city ? 'border-red-500' : 'border-gray-300'
-                }`}
-              >
-                <option value="">Select City</option>
-                {MAJOR_CITIES.map((city) => (
-                  <option key={city} value={city}>{city}</option>
-                ))}
-              </select>
-            </div>
-            {errors.city && (
-              <p className="text-red-500 text-sm">{errors.city}</p>
-            )}
-          </motion.div>
-
-          {/* State */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="space-y-2"
-          >
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <MapPin className="h-5 w-5 text-gray-400" />
-              </div>
-              <select
-                value={leadInfo?.state || ''}
-                onChange={(e) => handleInputChange('state', e.target.value)}
-                className={`block w-full pl-10 pr-3 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 ${
-                  errors.state ? 'border-red-500' : 'border-gray-300'
-                }`}
-              >
-                <option value="">Select State</option>
-                {US_STATES.map((state) => (
-                  <option key={state} value={state}>{state}</option>
-                ))}
-              </select>
-            </div>
-            {errors.state && (
-              <p className="text-red-500 text-sm">{errors.state}</p>
             )}
           </motion.div>
         </div>

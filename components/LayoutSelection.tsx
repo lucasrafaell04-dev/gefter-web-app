@@ -179,7 +179,7 @@ export default function LayoutSelection() {
                         onError={(e) => {
                           // Fallback to a default image if the shape image fails to load
                           const target = e.target as HTMLImageElement;
-                          target.src = '/assets/images/LShape.png';
+                          target.src = '/assets/images/shapeSelector/LShape.png';
                         }}
                       />
                     </div>

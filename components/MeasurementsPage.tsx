@@ -662,35 +662,6 @@ export default function MeasurementsPage() {
           </div>
         )}
 
-        {/* Square Feet Calculation */}
-        {!loading && !error && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="bg-white rounded-xl p-6 shadow-sm mb-8"
-          >
-            <div className="flex items-center justify-between mb-4">
-              {/* Square feet label removed as requested */}
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <input
-                type="text"
-                value={squareFeetValue.toFixed(3)}
-                readOnly
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 cursor-not-allowed"
-                placeholder="Calculated automatically"
-              />
-              <span className="text-sm text-gray-500 w-12">sq ft</span>
-            </div>
-            
-            <div className="mt-2 text-sm text-gray-600">
-              Calculated from measurements: {currentShape.layout.name}
-            </div>
-          </motion.div>
-        )}
-
         {/* Backsplash Toggle */}
         {!loading && !error && currentShape.layout.supports_backsplash && (
           <motion.div
@@ -728,18 +699,48 @@ export default function MeasurementsPage() {
             {currentShape.hasBacksplash && (
               <div className="mt-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Backsplash Height (inches)
+                  Backsplash Height (inches) - Max 20"
                 </label>
                 <input
-                  type="number"
-                  step="0.5"
-                  min="1"
-                  max="20"
-                  value={currentShape.backsplashHeight || 4}
-                  onChange={(e) => setShapeBacksplash(currentShapeIndex, true, parseFloat(e.target.value) || 4)}
+                  type="text"
+                  inputMode="decimal"
+                  value={currentShape.backsplashHeight !== undefined ? currentShape.backsplashHeight : ''}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Allow empty string to clear the input
+                    if (value === '') {
+                      setShapeBacksplash(currentShapeIndex, true, undefined);
+                      return;
+                    }
+                    // Allow only numbers and decimal point
+                    if (/^\d*\.?\d*$/.test(value)) {
+                      const numValue = parseFloat(value);
+                      // Only update if value is valid and <= 20
+                      if (!isNaN(numValue) && numValue <= 20) {
+                        setShapeBacksplash(currentShapeIndex, true, numValue);
+                      }
+                    }
+                  }}
+                  onBlur={(e) => {
+                    // On blur, ensure value is at least 1 if not empty
+                    const value = e.target.value;
+                    if (value === '') {
+                      setShapeBacksplash(currentShapeIndex, true, 4);
+                      return;
+                    }
+                    const numValue = parseFloat(value);
+                    if (isNaN(numValue) || numValue < 1) {
+                      setShapeBacksplash(currentShapeIndex, true, 4);
+                    } else if (numValue > 20) {
+                      setShapeBacksplash(currentShapeIndex, true, 20);
+                    }
+                  }}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                  placeholder="4"
+                  placeholder="Enter height (max 20)"
                 />
+                {currentShape.backsplashHeight && currentShape.backsplashHeight > 20 && (
+                  <p className="text-red-500 text-sm mt-1">Maximum height is 20 inches</p>
+                )}
               </div>
             )}
           </motion.div>

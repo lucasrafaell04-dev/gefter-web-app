@@ -24,29 +24,29 @@ export function getShapePngImage(layoutName: string): string {
 	
 	// PNG fallbacks for selection screen
 	const pngFallbackMap: Record<string, string> = {
-		'LShape': '/assets/images/LShape.png',
-		'UShape': '/assets/images/UShape.png',
-		'SingleWall': '/assets/images/SingleWall.png',
-		'Island': '/assets/images/Island.png',
-		'L-Shaped-Island': '/assets/images/L-Shaped-Island.png',
-		'Angled-shaped': '/assets/images/Angled-shaped.png',
-		'Angled-shaped-Island': '/assets/images/Angled-shaped-Island.png',
+		'LShape': '/assets/images/shapeSelector/LShape.png',
+		'UShape': '/assets/images/shapeSelector/UShape.png',
+		'SingleWall': '/assets/images/shapeSelector/SingleWall.png',
+		'Island': '/assets/images/shapeSelector/Island.png',
+		'L-Shaped-Island': '/assets/images/shapeSelector/L-Shaped-Island.png',
+		'Angled-shaped': '/assets/images/shapeSelector/Angled-shaped.png',
+		'Angled-shaped-Island': '/assets/images/shapeSelector/Angled-shaped-Island.png',
 	};
 	
-	return pngFallbackMap[layoutName] || '/assets/images/LShape.png';
+	return pngFallbackMap[layoutName] || '/assets/images/shapeSelector/LShape.png';
 }
 
 // Fallback mapping for different naming conventions (legacy support)
 export const shapeImageFallback: Record<string, string> = {
-	'L Shape': '/assets/images/LShape.png',
-	'U Shape': '/assets/images/UShape.png',
-	'Single Wall': '/assets/images/SingleWall.png',
-	'Kitchen Island': '/assets/images/Island.png',
-	'L-Shaped Island': '/assets/images/L-Shaped-Island.png',
-	'Angled Shape': '/assets/images/Angled-shaped.png',
-	'Angled Island': '/assets/images/Angled-shaped-Island.png',
-	'L-shape': '/assets/images/LShape.png',
-	'U-shape': '/assets/images/UShape.png',
-	'Straight': '/assets/images/SingleWall.png',
-	'L-shaped-Island': '/assets/images/L-Shaped-Island.png',
+	'L Shape': '/assets/images/shapeSelector/LShape.png',
+	'U Shape': '/assets/images/shapeSelector/UShape.png',
+	'Single Wall': '/assets/images/shapeSelector/SingleWall.png',
+	'Kitchen Island': '/assets/images/shapeSelector/Island.png',
+	'L-Shaped Island': '/assets/images/shapeSelector/L-Shaped-Island.png',
+	'Angled Shape': '/assets/images/shapeSelector/Angled-shaped.png',
+	'Angled Island': '/assets/images/shapeSelector/Angled-shaped-Island.png',
+	'L-shape': '/assets/images/shapeSelector/LShape.png',
+	'U-shape': '/assets/images/shapeSelector/UShape.png',
+	'Straight': '/assets/images/shapeSelector/SingleWall.png',
+	'L-shaped-Island': '/assets/images/shapeSelector/L-Shaped-Island.png',
 }; 
