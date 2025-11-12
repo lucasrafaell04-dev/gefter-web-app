@@ -1,5 +1,6 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { Layout, Material, EdgeStyle, LayoutField, AutoCalculationRule, LayoutFieldGroup } from '@/types';
+import { Layout, Material, EdgeStyle, LayoutField, AutoCalculationRule, LayoutFieldGroup, SinkOption } from '@/types';
 
 export const prismaService = {
   // Fetch all active layouts
@@ -181,6 +182,41 @@ export const prismaService = {
       }));
     } catch (error) {
       console.error('Error fetching layout field groups:', error);
+      return [];
+    }
+  },
+
+  // Fetch sinks filtered by environment when provided
+  async getSinks(environment?: 'kitchen' | 'bathroom'): Promise<SinkOption[]> {
+    try {
+      const sinks = await (prisma as unknown as {
+        sinks: {
+          findMany: (args: any) => Promise<Array<{
+            id: string;
+            name: string | null;
+            price: Prisma.Decimal | number | null;
+            environment: string | null;
+            asset_url: string | null;
+          }>>;
+        };
+      }).sinks.findMany({
+        where: environment ? { environment: environment.toUpperCase() } : undefined,
+        orderBy: {
+          name: 'asc',
+        },
+      });
+
+      return sinks.map((sink) => ({
+        id: sink.id,
+        name: sink.name || 'Sink',
+        description: '',
+        assetUrl: sink.asset_url || '',
+        price: sink.price ? Number(sink.price) : 0,
+        environment: (sink.environment || 'kitchen') as 'kitchen' | 'bathroom',
+        included: Number(sink.price || 0) === 0,
+      }));
+    } catch (error) {
+      console.error('Error fetching sinks:', error);
       return [];
     }
   },

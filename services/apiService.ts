@@ -1,4 +1,4 @@
-import { Layout, Material, EdgeStyle, LayoutField, AutoCalculationRule, LayoutFieldGroup } from '@/types';
+import { Layout, Material, EdgeStyle, LayoutField, AutoCalculationRule, LayoutFieldGroup, SinkOption } from '@/types';
 
 export const apiService = {
   // Fetch all active layouts
@@ -81,6 +81,21 @@ export const apiService = {
       return await response.json();
     } catch (error) {
       console.error('Error fetching layout field groups:', error);
+      return [];
+    }
+  },
+
+  // Fetch sinks filtered by environment when provided
+  async getSinks(environment?: 'kitchen' | 'bathroom'): Promise<SinkOption[]> {
+    try {
+      const queryString = environment ? `?environment=${encodeURIComponent(environment)}` : '';
+      const response = await fetch(`/api/sinks${queryString}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch sinks');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching sinks:', error);
       return [];
     }
   },

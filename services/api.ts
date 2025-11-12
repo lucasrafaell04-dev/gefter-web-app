@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { Layout, Material, EdgeStyle, LayoutField, AutoCalculationRule, LayoutFieldGroup } from '@/types';
+import { Layout, Material, EdgeStyle, LayoutField, AutoCalculationRule, LayoutFieldGroup, SinkOption } from '@/types';
 
 export const apiService = {
   // Fetch all active layouts
@@ -161,5 +161,34 @@ export const apiService = {
     }
 
     return data;
-  }
+  },
+
+  // Fetch sinks filtered by environment when provided
+  async getSinks(environment?: 'kitchen' | 'bathroom'): Promise<SinkOption[]> {
+    let query = supabase
+      .from('sinks')
+      .select('*')
+      .order('name', { ascending: true });
+
+    if (environment) {
+      query = query.eq('environment', environment.toUpperCase());
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching sinks:', error);
+      return [];
+    }
+
+    return (data || []).map((sink) => ({
+      id: sink.id,
+      name: sink.name || 'Sink',
+      description: '',
+      assetUrl: sink.asset_url || '',
+      price: Number(sink.price) || 0,
+      environment: (sink.environment || 'kitchen') as 'kitchen' | 'bathroom',
+      included: Number(sink.price) === 0,
+    }));
+  },
 }; 

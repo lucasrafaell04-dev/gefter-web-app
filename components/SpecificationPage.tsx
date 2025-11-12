@@ -6,7 +6,7 @@ import { ArrowLeft, Info, ChevronUp, ChevronDown, Minus, Plus } from 'lucide-rea
 import { useProjectStore } from '@/store/useProjectStore';
 import { CutoutOption, SinkOption, LayoutField } from '@/types';
 import Image from 'next/image';
-import { useLayoutData } from '@/hooks/useApiCache';
+import { useLayoutData, useSinks } from '@/hooks/useApiCache';
 import { DynamicSvgDiagram } from './MeasurementsPage';
 
 // Mock data for cutouts and sinks - in a real app, this would come from the database
@@ -26,17 +26,6 @@ const CUTOUT_OPTIONS: CutoutOption[] = [
     image: '/assets/images/cooktop-cutout.jpg',
     included: true,
     price: 0
-  }
-];
-
-const SINK_OPTIONS: SinkOption[] = [
-  {
-    id: 'free-stainless-sink',
-    name: 'Sink Cutout',
-    description: 'High-quality stainless steel sink included',
-    image: '/assets/images/1-cutout-sink.jpg',
-    price: 0,
-    included: true
   }
 ];
 
@@ -69,6 +58,8 @@ export default function SpecificationPage() {
   const layoutFields = fields.data || [];
   const manualFields = layoutFields.filter(field => field.field_type === 'manual' && field.is_visible);
   const autoCalculatedFields = layoutFields.filter(field => field.field_type === 'auto_calculated' && field.is_visible);
+
+  const { data: sinkOptions = [], isLoading: sinksLoading } = useSinks(currentShape?.environment);
 
   const handleSpecificationChange = (field: string, value: string) => {
     updateShapeSpecification(currentShapeIndex, { [field]: value });
@@ -341,14 +332,36 @@ export default function SpecificationPage() {
               Select the quantity for each sink that you want to purchase and click continue:
             </h3>
             
-            {SINK_OPTIONS.map((sink) => (
+          {sinksLoading && (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500" />
+            </div>
+          )}
+
+          {!sinksLoading && sinkOptions.length === 0 && (
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-dashed border-gray-300 text-center text-sm text-gray-600">
+              No sinks available for this room yet. Please contact support if this persists.
+            </div>
+          )}
+
+          {!sinksLoading && sinkOptions.map((sink) => (
               <div key={sink.id} className="bg-white rounded-xl p-6 shadow-sm border-l-4 border-green-500">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <Info className="w-5 h-5 text-green-600" />
                     <div>
                       <h4 className="font-medium text-gray-800">{sink.name}</h4>
-                      <p className="text-sm text-gray-600">{sink.description}</p>
+                    {sink.description && <p className="text-sm text-gray-600">{sink.description}</p>}
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-sm font-semibold text-gray-800">
+                        {sink.price === 0 ? 'Included' : `$${sink.price.toFixed(2)}`}
+                      </span>
+                      {sink.price > 0 && (
+                        <span className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
+                          + Add-on
+                        </span>
+                      )}
+                    </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -368,12 +381,12 @@ export default function SpecificationPage() {
                   </div>
                 </div>
                 
-                <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden">
+              <div className="w-24 h-24 bg-gray-100 rounded-lg overflow-hidden">
                   <Image
-                    src={sink.image}
+                  src={sink.assetUrl || '/assets/images/1-cutout-sink.jpg'}
                     alt={sink.name}
-                    width={64}
-                    height={64}
+                  width={96}
+                  height={96}
                     className="object-cover w-full h-full"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
@@ -382,7 +395,7 @@ export default function SpecificationPage() {
                   />
                 </div>
               </div>
-            ))}
+          ))}
           </motion.div>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import { apiService } from './api';
-import { Layout, Material, EdgeStyle, LayoutField, AutoCalculationRule } from '@/types';
+import { Layout, Material, EdgeStyle, LayoutField, AutoCalculationRule, SinkOption } from '@/types';
 
 export interface PreloadedData {
   layouts: Layout[];
@@ -8,6 +8,11 @@ export interface PreloadedData {
   layoutFields: { [layoutId: string]: LayoutField[] };
   autoCalculationRules: { [layoutId: string]: AutoCalculationRule[] };
   layoutFieldGroups: { [layoutId: string]: any[] };
+  sinksByEnvironment: {
+    kitchen: SinkOption[];
+    bathroom: SinkOption[];
+  };
+  sinkMap: Record<string, SinkOption>;
 }
 
 export class DataPreloader {
@@ -90,6 +95,18 @@ export class DataPreloader {
       await Promise.all(layoutDataPromises);
       console.log(`✅ Loaded data for ${layouts.length} layouts`);
 
+      // Fetch sinks for both environments
+      const [kitchenSinks, bathroomSinks] = await Promise.all([
+        apiService.getSinks('kitchen'),
+        apiService.getSinks('bathroom'),
+      ]);
+      console.log(`✅ Loaded ${kitchenSinks.length} kitchen sinks and ${bathroomSinks.length} bathroom sinks`);
+
+      const sinkMap = [...kitchenSinks, ...bathroomSinks].reduce<Record<string, SinkOption>>((acc, sink) => {
+        acc[sink.id] = sink;
+        return acc;
+      }, {});
+
       // Preload SVG images for all layouts
       await this.preloadSvgImages(layouts);
       console.log('✅ Preloaded SVG images');
@@ -100,7 +117,12 @@ export class DataPreloader {
         edgeStyles,
         layoutFields,
         autoCalculationRules,
-        layoutFieldGroups
+        layoutFieldGroups,
+        sinksByEnvironment: {
+          kitchen: kitchenSinks,
+          bathroom: bathroomSinks,
+        },
+        sinkMap,
       };
 
       console.log('🎉 Data preload completed successfully!');

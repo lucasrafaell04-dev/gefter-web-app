@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiService } from '@/services/apiService';
-import { Layout, Material, EdgeStyle, LayoutField, AutoCalculationRule, LayoutFieldGroup } from '@/types';
+import { Layout, Material, EdgeStyle, LayoutField, AutoCalculationRule, LayoutFieldGroup, SinkOption } from '@/types';
 import { dataPreloader } from '@/services/dataPreloader';
 
 // Query Keys para organização do cache
@@ -11,6 +11,7 @@ export const queryKeys = {
   layoutFields: (layoutId: string) => ['layoutFields', layoutId] as const,
   autoCalculationRules: (layoutId: string) => ['autoCalculationRules', layoutId] as const,
   layoutFieldGroups: (layoutId: string) => ['layoutFieldGroups', layoutId] as const,
+  sinks: (environment: 'kitchen' | 'bathroom') => ['sinks', environment] as const,
 };
 
 // Hook para layouts
@@ -121,6 +122,26 @@ export function useLayoutFieldGroups(layoutId: string) {
     staleTime: 1000 * 60 * 60, // 1 hora
     gcTime: 1000 * 60 * 60 * 24, // 24 horas
     enabled: !!layoutId,
+  });
+}
+
+// Hook para sinks por ambiente
+export function useSinks(environment: 'kitchen' | 'bathroom' | undefined) {
+  return useQuery<SinkOption[]>({
+    queryKey: environment ? queryKeys.sinks(environment) : ['sinks', 'unknown'],
+    queryFn: async () => {
+      const preloadedData = dataPreloader.getPreloadedData();
+      if (preloadedData && environment) {
+        return preloadedData.sinksByEnvironment[environment];
+      }
+      if (environment) {
+        return apiService.getSinks(environment);
+      }
+      return [];
+    },
+    enabled: !!environment,
+    staleTime: 1000 * 60 * 60,
+    gcTime: 1000 * 60 * 60 * 24,
   });
 }
 

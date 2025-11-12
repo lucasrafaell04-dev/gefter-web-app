@@ -222,7 +222,7 @@ export const useProjectStore = create<ProjectStore>()(
       resetProject: () => set(initialState),
 
       calculateTotalPrice: () => {
-        const { selectedShapes, selectedMaterial, selectedEdgeStyle } = get();
+        const { selectedShapes, selectedMaterial, selectedEdgeStyle, preloadedData } = get();
         let total = 0;
 
         selectedShapes.forEach((shape) => {
@@ -256,9 +256,8 @@ export const useProjectStore = create<ProjectStore>()(
 
             // Add sink costs
             Object.entries(shape.specification.sinks || {}).forEach(([sinkId, quantity]) => {
-              // This would be calculated based on actual sink pricing
-              // For now, we'll add a placeholder cost
-              total += quantity * 200; // $200 per sink
+              const sinkPrice = preloadedData?.sinkMap?.[sinkId]?.price ?? 0;
+              total += quantity * sinkPrice;
             });
           }
         });
@@ -268,7 +267,7 @@ export const useProjectStore = create<ProjectStore>()(
 
       // New method to calculate price by environment
       calculatePriceByEnvironment: () => {
-        const { selectedShapes, selectedMaterial, selectedEdgeStyle } = get();
+        const { selectedShapes, selectedMaterial, selectedEdgeStyle, preloadedData } = get();
         const kitchenShapes = selectedShapes.filter(shape => shape.environment === 'kitchen');
         const bathroomShapes = selectedShapes.filter(shape => shape.environment === 'bathroom');
         
@@ -296,7 +295,8 @@ export const useProjectStore = create<ProjectStore>()(
                 total += quantity * 50;
               });
               Object.entries(shape.specification.sinks || {}).forEach(([sinkId, quantity]) => {
-                total += quantity * 200;
+                const sinkPrice = preloadedData?.sinkMap?.[sinkId]?.price ?? 0;
+                total += quantity * sinkPrice;
               });
             }
           });

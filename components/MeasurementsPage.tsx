@@ -4,14 +4,80 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Info, ChevronUp, ChevronDown, Calculator, Eye, EyeOff } from 'lucide-react';
 import { useProjectStore } from '@/store/useProjectStore';
-import { LayoutField, AutoCalculationRule, LayoutFieldGroup } from '@/types';
+import { LayoutField } from '@/types';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { calculateAutoFields, CalculationEngine } from '@/utils/calculations';
 import { useLayoutData } from '@/hooks/useApiCache';
-import { getShapeSvgImage } from '@/data/shapeImageMap';
-import Image from 'next/image';
+import { getLocalSvgImage } from '@/data/shapeImageMap';
 
+const normalizeLabel = (value: string | null) => value?.replace(/\s+/g, ' ').trim() ?? '';
 
+const renderSvgWithMeasurements = (
+  baseSvgContent: string,
+  manualFields: LayoutField[],
+  autoCalculatedFields: LayoutField[] = [],
+  measurements: Record<string, number>
+) => {
+  if (!baseSvgContent) {
+    return '';
+  }
+  if (typeof window === 'undefined' || typeof DOMParser === 'undefined' || typeof XMLSerializer === 'undefined') {
+    return baseSvgContent;
+  }
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(baseSvgContent, 'image/svg+xml');
+    const parserError = doc.querySelector('parsererror');
+    if (parserError) {
+      console.error('Failed to parse layout SVG:', parserError.textContent);
+      return baseSvgContent;
+    }
+    const svgElement = doc.documentElement;
+    if (!svgElement || svgElement.nodeName.toLowerCase() !== 'svg') {
+      return baseSvgContent;
+    }
+    const fieldsToProcess = [...manualFields, ...autoCalculatedFields];
+    const updateElementText = (element: Element | null, text: string) => {
+      if (!element) {
+        return false;
+      }
+      const tspan = element.querySelector('tspan');
+      if (tspan) {
+        tspan.textContent = text;
+      } else {
+        element.textContent = text;
+      }
+      return true;
+    };
+    fieldsToProcess.forEach(field => {
+      const fieldValue = measurements[field.field_name] || 0;
+      const displayText = fieldValue > 0 ? `${fieldValue.toFixed(3)} in` : field.field_label;
+      let didUpdate = false;
+      if (field.svg_id) {
+        didUpdate = updateElementText(doc.getElementById(field.svg_id), displayText);
+      }
+      if (!didUpdate) {
+        const textNodes = Array.from(doc.getElementsByTagName('text'));
+        for (const node of textNodes) {
+          if (normalizeLabel(node.textContent) === normalizeLabel(field.field_label)) {
+            if (updateElementText(node, displayText)) {
+              didUpdate = true;
+              break;
+            }
+          }
+        }
+      }
+      if (!didUpdate && fieldValue > 0) {
+        console.warn(`Unable to update SVG label for ${field.field_name} (${field.svg_id || field.field_label}).`);
+      }
+    });
+    const serializer = new XMLSerializer();
+    return serializer.serializeToString(svgElement);
+  } catch (err) {
+    console.error('Error updating layout SVG:', err);
+    return baseSvgContent;
+  }
+};
 
 // Dynamic SVG component that loads base SVG from database and overlays dynamic labels
 export const DynamicSvgDiagram = React.memo(({ 
@@ -38,24 +104,20 @@ export const DynamicSvgDiagram = React.memo(({
         setLoading(true);
         setError(false);
         
-        const svgUrl = getShapeSvgImage(layoutName, layoutImage);
-        const response = await fetch(svgUrl);
+        const svgUrl = await getLocalSvgImage(layoutName);
         
-        if (!response.ok) {
+        if (!svgUrl) {
           throw new Error('Failed to load SVG');
         }
         
-        let svgText = await response.text();
+        let svgText = await svgUrl;
         
-        // Extract the base SVG content (remove any existing text elements)
         svgText = svgText.replace(/<text[^>]*>.*?<\/text>/g, '');
         
-        // Process SVG to ensure it fits within the container
         if (!svgText.includes('viewBox=')) {
           svgText = svgText.replace('<svg', '<svg viewBox="0 0 200 200"');
         }
         
-        // Ensure the SVG has proper styling
         svgText = svgText.replace('<svg', '<svg style="width: 100%; height: 100%; max-width: 100%; max-height: 100%;"');
         
         setBaseSvgContent(svgText);
@@ -68,7 +130,12 @@ export const DynamicSvgDiagram = React.memo(({
     };
 
     loadBaseSvg();
-  }, [layoutName, layoutImage]); // Only reload when layout changes
+  }, [layoutName, layoutImage]);
+
+  const renderedSvg = useMemo(
+    () => renderSvgWithMeasurements(baseSvgContent, manualFields, autoCalculatedFields, measurements),
+    [autoCalculatedFields, baseSvgContent, manualFields, measurements]
+  );
 
   if (loading) {
     return (
@@ -86,107 +153,11 @@ export const DynamicSvgDiagram = React.memo(({
     );
   }
 
-  // Update existing labels in the SVG with measurement values
-  let completeSvg = baseSvgContent;
-  
-  // Debug: Check if SVG contains expected text
-  console.log('🔍 SVG contains "Depth B":', completeSvg.includes('Depth B'));
-  console.log('🔍 SVG contains "label_depth_b":', completeSvg.includes('label_depth_b'));
-  
-  // Process all fields from database (manual and auto-calculated)
-  const allFields = [...manualFields, ...autoCalculatedFields];
-  console.log('🔍 Manual fields:', manualFields.map(f => ({ name: f.field_name, label: f.field_label, svgId: f.svg_id })));
-  console.log('🔍 Auto-calculated fields:', autoCalculatedFields.map(f => ({ name: f.field_name, label: f.field_label, svgId: f.svg_id })));
-  console.log('🔍 All fields to process:', allFields.map(f => ({ name: f.field_name, label: f.field_label, svgId: f.svg_id })));
-  console.log('🔍 Measurements:', measurements);
-  console.log('🔍 Looking for depthB:', measurements['depthB'], 'or depth_b:', measurements['depth_b']);
-  
-  allFields.forEach((field) => {
-    const value = measurements[field.field_name] || 0;
-    const fieldLabel = field.field_label;
-    
-    // Use SVG ID directly from the database field
-    const svgId = field.svg_id;
-    
-    // First, try to replace by SVG ID if available (most specific)
-    if (svgId) {
-      const idRegex = new RegExp(
-        `(<text[^>]*id="${svgId}"[^>]*>\\s*<tspan[^>]*>\\s*)${fieldLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\s*</tspan>\\s*</text>)`,
-        'g'
-      );
-      
-      completeSvg = completeSvg.replace(idRegex, (match, startTag, endTag) => {
-        const displayText = value > 0 ? `${value.toFixed(3)} in` : fieldLabel;
-        console.log(`✅ Database SVG ID replacement for ${field.field_name}: ${fieldLabel} -> ${displayText} (value: ${value})`);
-        return `${startTag}${displayText}${endTag}`;
-      });
-      
-      // Check if the replacement actually happened
-      if (!completeSvg.includes(fieldLabel) && value > 0) {
-        console.log(`⚠️ SVG ID replacement may have failed for ${field.field_name} (${fieldLabel})`);
-      }
-      
-      // Also try simpler ID-based replacement
-      const simpleIdRegex = new RegExp(
-        `(<text[^>]*id="${svgId}"[^>]*>\\s*)${fieldLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\s*</text>)`,
-        'g'
-      );
-      
-      completeSvg = completeSvg.replace(simpleIdRegex, (match, startTag, endTag) => {
-        const displayText = value > 0 ? `${value.toFixed(3)} in` : fieldLabel;
-        return `${startTag}${displayText}${endTag}`;
-      });
-    }
-    
-    // Fallback: Find and replace the text content of existing labels
-    // Look for <text> elements that contain the field label
-    const labelRegex = new RegExp(
-      `(<text[^>]*>\\s*<tspan[^>]*>\\s*)${fieldLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\s*</tspan>\\s*</text>)`,
-      'g'
-    );
-    
-    // Replace the label text with the measurement value
-    completeSvg = completeSvg.replace(labelRegex, (match, startTag, endTag) => {
-      const displayText = value > 0 ? `${value.toFixed(3)} in` : fieldLabel;
-      return `${startTag}${displayText}${endTag}`;
-    });
-    
-    // Also try a simpler approach for cases where the label might be directly in the text element
-    const simpleLabelRegex = new RegExp(
-      `(<text[^>]*>\\s*)${fieldLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\s*</text>)`,
-      'g'
-    );
-    
-    completeSvg = completeSvg.replace(simpleLabelRegex, (match, startTag, endTag) => {
-      const displayText = value > 0 ? `${value.toFixed(3)} in` : fieldLabel;
-      return `${startTag}${displayText}${endTag}`;
-    });
-  });
-
-  // Special fallback for Depth B if it's not being processed
-  const depthBValue = measurements['depthB'] || measurements['depth_b'] || 0;
-  if (depthBValue > 0) {
-    console.log('🔧 Special fallback for Depth B:', depthBValue);
-    
-    // Try to replace "Depth B" text in the SVG
-    const depthBRegex = /(<text[^>]*>.*?<tspan[^>]*>.*?)Depth B(.*?<\/tspan>.*?<\/text>)/g;
-    completeSvg = completeSvg.replace(depthBRegex, (match, startTag, endTag) => {
-      console.log('✅ Special Depth B replacement found and applied');
-      return `${startTag}${depthBValue.toFixed(3)} in${endTag}`;
-    });
-    
-    // Also try simpler replacement
-    const simpleDepthBRegex = /(<text[^>]*>.*?)Depth B(.*?<\/text>)/g;
-    completeSvg = completeSvg.replace(simpleDepthBRegex, (match, startTag, endTag) => {
-      console.log('✅ Simple Depth B replacement found and applied');
-      return `${startTag}${depthBValue.toFixed(3)} in${endTag}`;
-    });
-  }
 
   return (
-    <div 
+    <div
       className="w-full h-full flex items-center justify-center"
-      dangerouslySetInnerHTML={{ __html: completeSvg }}
+      dangerouslySetInnerHTML={{ __html: renderedSvg || baseSvgContent }}
     />
   );
 }, (prevProps, nextProps) => {

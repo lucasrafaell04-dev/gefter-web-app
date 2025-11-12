@@ -128,10 +128,11 @@ export interface CutoutOption {
 export interface SinkOption {
   id: string;
   name: string;
-  description: string;
-  image: string;
+  description?: string;
+  assetUrl: string;
   price: number;
-  included: boolean;
+  environment: 'kitchen' | 'bathroom';
+  included?: boolean;
 }
 
 export interface ShapeSpecification {

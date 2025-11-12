@@ -1,11 +1,4 @@
-// Function to get SVG image from database layout or fallback to SVG assets (Measurements Screen)
-export function getShapeSvgImage(layoutName: string, layoutImage?: string): string {
-	// Prefer database-provided image URL when present
-	if (layoutImage && layoutImage.trim() !== '') {
-		return layoutImage;
-	}
-	
-	// SVG fallbacks for measurements screen
+export function getLocalSvgImage(layoutName: string): Promise<string> {
 	const svgFallbackMap: Record<string, string> = {
 		'LShape': '/assets/images/LShape.svg',
 		'UShape': '/assets/images/UShape.svg',
@@ -15,8 +8,7 @@ export function getShapeSvgImage(layoutName: string, layoutImage?: string): stri
 		'Angled-shaped': '/assets/images/Angled-shaped.svg',
 		'Angled-shaped-Island': '/assets/images/Angled-shaped-Island.svg',
 	};
-	
-	return svgFallbackMap[layoutName] || '/assets/images/LShape.svg';
+	return fetch(svgFallbackMap[layoutName]).then(response => response.text());
 }
 
 // Function to get PNG image from database layout or fallback to PNG assets (Selection Screen)
