@@ -507,7 +507,7 @@ model materials {
 model sinks {
   id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name        String?   @db.VarChar(255)
-  price       Decimal?  @db.Numeric(10, 2)
+  price       Float?
   environment String?   @db.VarChar(50)
   created_at  DateTime  @default(now()) @db.Timestamptz(6)
   asset_url   String?   @db.VarChar(255)
