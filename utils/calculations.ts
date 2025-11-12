@@ -34,6 +34,9 @@ export class CalculationEngine {
       case 'Angled-shaped-Island':
         mainArea = this.calculateAngledShapeArea(measurements); // Use Angled-shape calculation for main area
         break;
+      case 'SinglePiece':
+        mainArea = this.calculateSinglePieceArea(measurements);
+        break;
       default:
         mainArea = 0;
     }
@@ -250,6 +253,10 @@ export class CalculationEngine {
         { field_name: 'depthA', field_label: 'Depth A' },
         { field_name: 'depthB', field_label: 'Depth B' },
         { field_name: 'depthC', field_label: 'Depth C' }
+      ],
+      'SinglePiece': [
+        { field_name: 'widthA', field_label: 'Width A' },
+        { field_name: 'depthA', field_label: 'Depth A' }
       ]
     };
 
@@ -319,7 +326,13 @@ export class CalculationEngine {
     return (widthA * depthA) / 144;
   }
 
-
+  private static calculateSinglePieceArea(measurements: Record<string, number>): number {
+    const widthA = measurements['widthA'] || measurements['width_a'] || 0;
+    const depthA = measurements['depthA'] || measurements['depth_a'] || 0;
+    
+    // Seção retangular única
+    return (widthA * depthA) / 144;
+  }
 
   /**
    * Calcula área para Angled-shaped: Soma de todas as seções / 144
