@@ -18,7 +18,8 @@ export default function ProjectSummary() {
     calculateTotalPrice,
     calculatePriceByEnvironment,
     resetProject,
-    setCurrentStep 
+    setCurrentStep,
+    preloadedData
   } = useProjectStore();
 
   const toggleShapeExpansion = (shapeIndex: number) => {
@@ -287,12 +288,24 @@ export default function ProjectSummary() {
                               {shape.specification.sinks && Object.keys(shape.specification.sinks).length > 0 && (
                                 <div className="mt-2">
                                   <div className="text-gray-700 text-xs mb-1">Sinks:</div>
-                                  {Object.entries(shape.specification.sinks).map(([sinkId, quantity]) => (
-                                    <div key={sinkId} className="flex justify-between text-xs">
-                                      <span className="text-gray-600">{sinkId}:</span>
-                                      <span className="font-medium text-gray-900">{quantity}</span>
-                                    </div>
-                                  ))}
+                                  {Object.entries(shape.specification.sinks).map(([sinkId, quantity]) => {
+                                    const sinkDetails = preloadedData?.sinkMap?.[sinkId];
+                                    const sinkName = sinkDetails?.name || sinkId;
+                                    const unitPrice = sinkDetails?.price ?? 0;
+                                    return (
+                                      <div key={sinkId} className="flex justify-between text-xs">
+                                        <span className="text-gray-600">{sinkName}</span>
+                                        <span className="font-medium text-gray-900">
+                                          {quantity}
+                                          {sinkDetails && (
+                                            <span className="text-gray-500 ml-2">
+                                              × ${unitPrice.toFixed(2)} = ${(unitPrice * quantity).toFixed(2)}
+                                            </span>
+                                          )}
+                                        </span>
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               )}
                             </div>
