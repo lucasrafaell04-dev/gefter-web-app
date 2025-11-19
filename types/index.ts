@@ -140,11 +140,16 @@ export interface ShapeSpecification {
   countertopToRemove?: string;
   hasHolesOrCuts?: 'yes' | 'no';
   needsSink?: 'yes' | 'no';
+  selectedSinkFromStore?: boolean;
+  selectedFaucetFromStore?: boolean;
   cutouts?: {
     [cutoutId: string]: number; // cutoutId -> quantity
   };
   sinks?: {
     [sinkId: string]: number; // sinkId -> quantity
+  };
+  cutoutAutoCount?: {
+    [cutoutId: string]: number;
   };
 }
 

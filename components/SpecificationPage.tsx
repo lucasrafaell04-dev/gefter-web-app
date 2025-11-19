@@ -46,15 +46,23 @@ const COUNTERTOP_REMOVAL_OPTIONS = [
   'Other'
 ];
 
+const SINK_CUTOUT_ID = 'sink-cutout';
+const FAUCET_CUTOUT_ID = 'faucet-cutout';
+
+const AUTO_CUTOUT_MESSAGES: Record<string, string> = {
+  [SINK_CUTOUT_ID]: 'Este corte é obrigatório porque você selecionou uma pia da loja.',
+  [FAUCET_CUTOUT_ID]: 'Este corte é obrigatório porque você selecionou uma torneira da loja.'
+};
+
 export default function SpecificationPage() {
   // Selective subscriptions to prevent unnecessary re-renders
   const selectedShapes = useProjectStore(state => state.selectedShapes);
+  const preloadedData = useProjectStore(state => state.preloadedData);
   const updateShapeSpecification = useProjectStore(state => state.updateShapeSpecification);
   const updateShapeCutoutQuantity = useProjectStore(state => state.updateShapeCutoutQuantity);
   const updateShapeSinkQuantity = useProjectStore(state => state.updateShapeSinkQuantity);
   const nextStep = useProjectStore(state => state.nextStep);
   const previousStep = useProjectStore(state => state.previousStep);
-  const calculateTotalPrice = useProjectStore(state => state.calculateTotalPrice);
   
   const [currentShapeIndex, setCurrentShapeIndex] = useState(0);
   const [showProjectSummary, setShowProjectSummary] = useState(false);
@@ -70,16 +78,78 @@ export default function SpecificationPage() {
 
   const { data: sinkOptions = [], isLoading: sinksLoading } = useSinks(currentShape?.environment);
 
+  const getCutoutPrice = (cutoutId: string) => {
+    const cutout = CUTOUT_OPTIONS.find(option => option.id === cutoutId);
+    return cutout?.price ?? 0;
+  };
+
+  const getSinkPrice = (sinkId: string) => {
+    const priceFromPreload = preloadedData?.sinkMap?.[sinkId]?.price;
+    if (typeof priceFromPreload === 'number') {
+      return priceFromPreload;
+    }
+    const option = sinkOptions.find(sink => sink.id === sinkId);
+    return option?.price ?? 0;
+  };
+
+  const specificationExtrasTotal = useMemo(() => {
+    return selectedShapes.reduce((projectTotal, shape) => {
+      const spec = shape.specification;
+      if (!spec) return projectTotal;
+
+      let total = projectTotal;
+
+      Object.entries(spec.cutouts || {}).forEach(([cutoutId, quantity]) => {
+        total += getCutoutPrice(cutoutId) * quantity;
+      });
+
+      Object.entries(spec.sinks || {}).forEach(([sinkId, quantity]) => {
+        total += getSinkPrice(sinkId) * quantity;
+      });
+
+      return total;
+    }, 0);
+  }, [selectedShapes, preloadedData?.sinkMap, sinkOptions]);
+
   const handleSpecificationChange = (field: string, value: string) => {
+    if (field === 'needsSink' && value !== 'yes' && currentShape?.specification) {
+      const existingSinks = currentShape.specification.sinks || {};
+      Object.entries(existingSinks).forEach(([sinkId, qty]) => {
+        if (qty > 0) {
+          updateShapeSinkQuantity(currentShapeIndex, sinkId, 0);
+        }
+      });
+      syncStoreProductSelection('sink', 0);
+    }
+
     updateShapeSpecification(currentShapeIndex, { [field]: value });
   };
 
   const handleCutoutQuantityChange = (cutoutId: string, quantity: number) => {
-    updateShapeCutoutQuantity(currentShapeIndex, cutoutId, quantity);
+    const nextQuantity = Math.max(0, quantity);
+    const autoCount = getAutoCutoutCount(cutoutId);
+
+    if (nextQuantity < autoCount) {
+      const message = AUTO_CUTOUT_MESSAGES[cutoutId] || 'Este corte é obrigatório.';
+      window.alert(message);
+      return;
+    }
+
+    updateShapeCutoutQuantity(currentShapeIndex, cutoutId, nextQuantity);
   };
 
   const handleSinkQuantityChange = (sinkId: string, quantity: number) => {
-    updateShapeSinkQuantity(currentShapeIndex, sinkId, quantity);
+    const nextQuantity = Math.max(0, quantity);
+    updateShapeSinkQuantity(currentShapeIndex, sinkId, nextQuantity);
+
+    const currentSinks = currentShape?.specification?.sinks || {};
+    const updatedSinks = {
+      ...currentSinks,
+      [sinkId]: nextQuantity
+    };
+
+    const totalSelected = Object.values(updatedSinks).reduce((sum, qty) => sum + (qty || 0), 0);
+    syncStoreProductSelection('sink', totalSelected);
   };
 
   const handleContinue = () => {
@@ -113,6 +183,49 @@ export default function SpecificationPage() {
     return currentShape?.specification?.sinks?.[sinkId] || 0;
   };
 
+  const getAutoCutoutCount = (cutoutId: string) => {
+    return currentShape?.specification?.cutoutAutoCount?.[cutoutId] || 0;
+  };
+
+  const updateAutoCutoutCount = (cutoutId: string, count: number) => {
+    const currentCounts = currentShape?.specification?.cutoutAutoCount || {};
+    const nextCounts = { ...currentCounts };
+
+    if (count <= 0) {
+      delete nextCounts[cutoutId];
+    } else {
+      nextCounts[cutoutId] = count;
+    }
+
+    updateShapeSpecification(currentShapeIndex, { cutoutAutoCount: nextCounts });
+  };
+
+  const enforceCutoutRequirement = (cutoutId: string, requiredCount: number) => {
+    const currentQuantity = getCurrentCutoutQuantity(cutoutId);
+    const autoCount = getAutoCutoutCount(cutoutId);
+    const manualQuantity = Math.max(0, currentQuantity - autoCount);
+
+    if (requiredCount === autoCount) {
+      return;
+    }
+
+    const newQuantity = manualQuantity + requiredCount;
+    updateShapeCutoutQuantity(currentShapeIndex, cutoutId, newQuantity);
+    updateAutoCutoutCount(cutoutId, requiredCount);
+  };
+
+  const syncStoreProductSelection = (type: 'sink' | 'faucet', totalSelected: number) => {
+    const isSelected = totalSelected > 0;
+    const specUpdate = type === 'sink'
+      ? { selectedSinkFromStore: isSelected }
+      : { selectedFaucetFromStore: isSelected };
+
+    updateShapeSpecification(currentShapeIndex, specUpdate);
+
+    const cutoutId = type === 'sink' ? SINK_CUTOUT_ID : FAUCET_CUTOUT_ID;
+    enforceCutoutRequirement(cutoutId, totalSelected);
+  };
+
   // Initialize specification if it doesn't exist
   const initializeSpecification = () => {
     if (!currentShape?.specification) {
@@ -121,8 +234,11 @@ export default function SpecificationPage() {
         countertopToRemove: '',
         hasHolesOrCuts: undefined,
         needsSink: undefined,
+        selectedSinkFromStore: false,
+        selectedFaucetFromStore: false,
         cutouts: {},
-        sinks: {}
+        sinks: {},
+        cutoutAutoCount: {}
       });
     }
   };
@@ -462,16 +578,16 @@ export default function SpecificationPage() {
             >
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Shapes Completed:</span>
-                  <span className="font-medium">{currentShapeIndex + 1} of {selectedShapes.length}</span>
+                  <span className="text-gray-900">Shapes Completed:</span>
+                  <span className="font-semibold text-gray-900">{currentShapeIndex + 1} of {selectedShapes.length}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Current Shape:</span>
-                  <span className="font-medium">{currentShape.layout.name}</span>
+                  <span className="text-gray-900">Current Shape:</span>
+                  <span className="font-semibold text-gray-900">{currentShape.layout.name}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Estimated Total:</span>
-                  <span className="font-medium">${calculateTotalPrice().toFixed(2)}</span>
+                  <span className="text-gray-900">Selected Items Total:</span>
+                  <span className="font-semibold text-gray-900">${specificationExtrasTotal.toFixed(2)}</span>
                 </div>
               </div>
             </motion.div>
