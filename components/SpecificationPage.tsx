@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Info, ChevronUp, ChevronDown, Minus, Plus } from 'lucide-react';
+import { ArrowLeft, Info, ChevronUp, ChevronDown, Minus, Plus, X } from 'lucide-react';
 import { useProjectStore } from '@/store/useProjectStore';
 import { CutoutOption, SinkOption, LayoutField } from '@/types';
 import Image from 'next/image';
@@ -13,11 +13,11 @@ import { DynamicSvgDiagram } from './MeasurementsPage';
 const CUTOUT_OPTIONS: CutoutOption[] = [
   {
     id: 'faucet-cutout',
-    name: 'Faucet cutout',
+    name: 'Faucet Cutout',
     description: 'Standard faucet cutout for kitchen sink',
     image: '/assets/images/1-cutout-sink.jpg',
     included: true,
-    price: 0
+    price: 75
   },
   {
     id: 'cooktop-cutout',
@@ -25,7 +25,15 @@ const CUTOUT_OPTIONS: CutoutOption[] = [
     description: 'Standard cooktop cutout',
     image: '/assets/images/cooktop-cutout.jpg',
     included: true,
-    price: 0
+    price: 150
+  },
+  {
+    id: 'sink-cutout',
+    name: 'Sink Cutout',
+    description: 'Standard sink cutout',
+    image: '/assets/images/sink-cutout.jpg',
+    included: true,
+    price: 150
   }
 ];
 
@@ -50,6 +58,7 @@ export default function SpecificationPage() {
   
   const [currentShapeIndex, setCurrentShapeIndex] = useState(0);
   const [showProjectSummary, setShowProjectSummary] = useState(false);
+  const [selectedSinkImage, setSelectedSinkImage] = useState<{ url: string; name: string } | null>(null);
 
   const currentShape = selectedShapes[currentShapeIndex];
 
@@ -93,7 +102,7 @@ export default function SpecificationPage() {
     if (!currentShape?.specification) return false;
     
     const spec = currentShape.specification;
-    return spec.keepCurrentCabinets && spec.countertopToRemove && spec.hasHolesOrCuts;
+    return spec.keepCurrentCabinets && spec.countertopToRemove && spec.hasHolesOrCuts && spec.needsSink;
   };
 
   const getCurrentCutoutQuantity = (cutoutId: string) => {
@@ -111,6 +120,7 @@ export default function SpecificationPage() {
         keepCurrentCabinets: undefined,
         countertopToRemove: '',
         hasHolesOrCuts: undefined,
+        needsSink: undefined,
         cutouts: {},
         sinks: {}
       });
@@ -321,82 +331,108 @@ export default function SpecificationPage() {
             </motion.div>
           )}
 
-          {/* Sink Selection */}
+          {/* Sink Requirement */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="space-y-4"
+            transition={{ duration: 0.5, delay: 0.35 }}
+            className="bg-white rounded-xl p-6 shadow-sm"
           >
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              Select the quantity for each sink that you want to purchase and click continue:
-            </h3>
-            
-          {sinksLoading && (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500" />
-            </div>
-          )}
-
-          {!sinksLoading && sinkOptions.length === 0 && (
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-dashed border-gray-300 text-center text-sm text-gray-600">
-              No sinks available for this room yet. Please contact support if this persists.
-            </div>
-          )}
-
-          {!sinksLoading && sinkOptions.map((sink) => (
-              <div key={sink.id} className="bg-white rounded-xl p-6 shadow-sm border-l-4 border-green-500">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <Info className="w-5 h-5 text-green-600" />
-                    <div>
-                      <h4 className="font-medium text-gray-800">{sink.name}</h4>
-                    {sink.description && <p className="text-sm text-gray-600">{sink.description}</p>}
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-sm font-semibold text-gray-800">
-                        {sink.price === 0 ? 'Included' : `$${sink.price.toFixed(2)}`}
-                      </span>
-                      {sink.price > 0 && (
-                        <span className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
-                          + Add-on
-                        </span>
-                      )}
-                    </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleSinkQuantityChange(sink.id, Math.max(0, getCurrentSinkQuantity(sink.id) - 1))}
-                      className="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center transition-colors"
-                    >
-                      <Minus className="w-4 h-4" />
-                    </button>
-                    <span className="w-8 text-center font-medium text-gray-900">{getCurrentSinkQuantity(sink.id)}</span>
-                    <button
-                      onClick={() => handleSinkQuantityChange(sink.id, getCurrentSinkQuantity(sink.id) + 1)}
-                      className="w-8 h-8 bg-green-500 hover:bg-green-600 rounded-full flex items-center justify-center transition-colors text-white"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-                
-              <div className="w-24 h-24 bg-gray-100 rounded-lg overflow-hidden">
-                  <Image
-                  src={sink.assetUrl || '/assets/images/1-cutout-sink.jpg'}
-                    alt={sink.name}
-                  width={96}
-                  height={96}
-                    className="object-cover w-full h-full"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = '/assets/images/1-cutout-sink.jpg';
-                    }}
-                  />
-                </div>
-              </div>
-          ))}
+            <label className="block text-lg font-medium text-gray-800 mb-4">
+              Will you need a sink or do you already own one?
+            </label>
+            <select
+              value={currentShape.specification?.needsSink || ''}
+              onChange={(e) => handleSpecificationChange('needsSink', e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+            >
+              <option value="">Select</option>
+              <option value="yes">Yes, I need a sink</option>
+              <option value="no">No, I already have one</option>
+            </select>
           </motion.div>
+
+          {/* Sink Selection */}
+          {currentShape.specification?.needsSink === 'yes' && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="space-y-4"
+            >
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                Select the quantity for each sink that you want to purchase and click continue:
+              </h3>
+              
+            {sinksLoading && (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500" />
+              </div>
+            )}
+
+            {!sinksLoading && sinkOptions.length === 0 && (
+              <div className="bg-white rounded-xl p-6 shadow-sm border border-dashed border-gray-300 text-center text-sm text-gray-600">
+                No sinks available for this room yet. Please contact support if this persists.
+              </div>
+            )}
+
+            {!sinksLoading && sinkOptions.map((sink) => (
+                <div key={sink.id} className="bg-white rounded-xl p-6 shadow-sm border-l-4 border-green-500">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <Info className="w-5 h-5 text-green-600" />
+                      <div>
+                        <h4 className="font-medium text-gray-800">{sink.name}</h4>
+                      {sink.description && <p className="text-sm text-gray-600">{sink.description}</p>}
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-sm font-semibold text-gray-800">
+                          {sink.price === 0 ? 'Included' : `$${sink.price.toFixed(2)}`}
+                        </span>
+                        {sink.price > 0 && (
+                          <span className="text-xs text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
+                            + Add-on
+                          </span>
+                        )}
+                      </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleSinkQuantityChange(sink.id, Math.max(0, getCurrentSinkQuantity(sink.id) - 1))}
+                        className="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center transition-colors"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <span className="w-8 text-center font-medium text-gray-900">{getCurrentSinkQuantity(sink.id)}</span>
+                      <button
+                        onClick={() => handleSinkQuantityChange(sink.id, getCurrentSinkQuantity(sink.id) + 1)}
+                        className="w-8 h-8 bg-green-500 hover:bg-green-600 rounded-full flex items-center justify-center transition-colors text-white"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                <button
+                  onClick={() => setSelectedSinkImage({ url: sink.assetUrl || '/assets/images/1-cutout-sink.jpg', name: sink.name })}
+                  className="w-24 h-24 bg-gray-100 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-green-500 transition-all"
+                >
+                    <Image
+                    src={sink.assetUrl || '/assets/images/1-cutout-sink.jpg'}
+                      alt={sink.name}
+                    width={96}
+                    height={96}
+                      className="object-cover w-full h-full"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = '/assets/images/1-cutout-sink.jpg';
+                      }}
+                    />
+                  </button>
+                </div>
+            ))}
+            </motion.div>
+          )}
         </div>
       </div>
 
@@ -455,6 +491,49 @@ export default function SpecificationPage() {
           </button>
         </div>
       </div>
+
+      {/* Sink Image Modal */}
+      {selectedSinkImage && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
+          onClick={() => setSelectedSinkImage(null)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            className="relative max-w-4xl max-h-[90vh] w-full bg-white rounded-lg overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="absolute top-4 right-4 z-10">
+              <button
+                onClick={() => setSelectedSinkImage(null)}
+                className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-gray-100 transition-colors"
+              >
+                <X className="w-6 h-6 text-gray-800" />
+              </button>
+            </div>
+            <div className="p-6">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4">{selectedSinkImage.name}</h3>
+              <div className="relative w-full h-[70vh] bg-gray-100 rounded-lg overflow-hidden">
+                <Image
+                  src={selectedSinkImage.url}
+                  alt={selectedSinkImage.name}
+                  fill
+                  className="object-contain"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = '/assets/images/1-cutout-sink.jpg';
+                  }}
+                />
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </div>
   );
 } 

@@ -139,6 +139,7 @@ export interface ShapeSpecification {
   keepCurrentCabinets?: 'yes' | 'no';
   countertopToRemove?: string;
   hasHolesOrCuts?: 'yes' | 'no';
+  needsSink?: 'yes' | 'no';
   cutouts?: {
     [cutoutId: string]: number; // cutoutId -> quantity
   };

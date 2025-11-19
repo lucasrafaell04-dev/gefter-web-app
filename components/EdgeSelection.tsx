@@ -2,14 +2,16 @@
 
 import { motion } from 'framer-motion';
 import { ArrowLeft, Info, Check, ChevronUp } from 'lucide-react';
+import Image from 'next/image';
 import { useProjectStore } from '@/store/useProjectStore';
 import { EdgeStyle } from '@/types';
-import { useState } from 'react';
 import { useEdgeStyles } from '@/hooks/useApiCache';
+import { useState } from 'react';
 
 export default function EdgeSelection() {
   const { selectedEdgeStyle, setSelectedEdgeStyle, nextStep, previousStep, calculateTotalPrice } = useProjectStore();
   const [showProjectSummary, setShowProjectSummary] = useState(false);
+  const [failedImageMap, setFailedImageMap] = useState<Record<string, boolean>>({});
   
   // Use cache hook instead of manual fetch
   const { data: edgeStyles = [], isLoading: loading, error } = useEdgeStyles();
@@ -22,6 +24,24 @@ export default function EdgeSelection() {
     if (selectedEdgeStyle) {
       nextStep();
     }
+  };
+
+  const resolveEdgeImage = (image?: string | null) => {
+    if (!image) return null;
+    if (/^https?:\/\//i.test(image)) {
+      return image;
+    }
+    if (image.startsWith('/')) {
+      return image;
+    }
+    return `/assets/${image.replace(/^\/+/, '')}`;
+  };
+
+  const handleImageError = (edgeId: string) => {
+    setFailedImageMap((prev) => ({
+      ...prev,
+      [edgeId]: true,
+    }));
   };
 
   return (
@@ -77,86 +97,71 @@ export default function EdgeSelection() {
 
         {/* Edge Style Options */}
         <div className="space-y-4">
-          {edgeStyles.map((edgeStyle) => (
-            <motion.div
-              key={edgeStyle.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <button
-                onClick={() => handleEdgeSelect(edgeStyle)}
-                className={`w-full p-4 md:p-6 bg-gray-800 rounded-xl text-left transition-all duration-300 ${
-                  selectedEdgeStyle?.id === edgeStyle.id
-                    ? 'ring-2 ring-blue-500 shadow-lg'
-                    : 'hover:bg-gray-700'
-                }`}
+          {edgeStyles.map((edgeStyle) => {
+            const imageSrc = resolveEdgeImage(edgeStyle.image);
+            const showImage = imageSrc && !failedImageMap[edgeStyle.id];
+            return (
+              <motion.div
+                key={edgeStyle.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    {/* Edge Style Diagram */}
-                    <div className="w-16 h-16 md:w-20 md:h-20 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
-                      <div className="text-gray-800">
-                        {edgeStyle.name === 'Eased Edge' && (
-                          <svg width="32" height="32" viewBox="0 0 40 40" className="text-gray-800">
-                            <rect x="5" y="15" width="30" height="10" fill="none" stroke="currentColor" strokeWidth="2" rx="1" />
-                          </svg>
+                <button
+                  onClick={() => handleEdgeSelect(edgeStyle)}
+                  className={`w-full p-4 md:p-6 bg-gray-800 rounded-xl text-left transition-all duration-300 ${
+                    selectedEdgeStyle?.id === edgeStyle.id
+                      ? 'ring-2 ring-blue-500 shadow-lg'
+                      : 'hover:bg-gray-700'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 md:w-20 md:h-20 bg-white rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
+                        {showImage ? (
+                          <Image
+                            src={imageSrc as string}
+                            alt={`${edgeStyle.name} edge preview`}
+                            width={80}
+                            height={80}
+                            className="object-cover w-full h-full"
+                            onError={() => handleImageError(edgeStyle.id)}
+                          />
+                        ) : (
+                          <div className="text-gray-400 text-xs font-medium text-center px-2">
+                            Image unavailable
+                          </div>
                         )}
-                        {edgeStyle.name === 'Bullnose' && (
-                          <svg width="32" height="32" viewBox="0 0 40 40" className="text-gray-800">
-                            <rect x="5" y="15" width="30" height="10" fill="none" stroke="currentColor" strokeWidth="2" rx="5" />
-                          </svg>
-                        )}
-                        {edgeStyle.name === 'Double Radius Edge' && (
-                          <svg width="32" height="32" viewBox="0 0 40 40" className="text-gray-800">
-                            <path d="M5 15 Q20 10 35 15 Q20 20 5 15" fill="none" stroke="currentColor" strokeWidth="2" />
-                            <path d="M5 25 Q20 30 35 25 Q20 20 5 25" fill="none" stroke="currentColor" strokeWidth="2" />
-                          </svg>
-                        )}
-                        {edgeStyle.name === 'Half Bullnose Edge' && (
-                          <svg width="32" height="32" viewBox="0 0 40 40" className="text-gray-800">
-                            <rect x="5" y="15" width="30" height="10" fill="none" stroke="currentColor" strokeWidth="2" />
-                            <path d="M5 15 Q20 10 35 15" fill="none" stroke="currentColor" strokeWidth="2" />
-                          </svg>
-                        )}
-                        {edgeStyle.name === 'Ogee Edge' && (
-                          <svg width="32" height="32" viewBox="0 0 40 40" className="text-gray-800">
-                            <path d="M5 15 Q15 10 20 15 Q25 20 35 15" fill="none" stroke="currentColor" strokeWidth="2" />
-                            <path d="M5 25 Q15 30 20 25 Q25 20 35 25" fill="none" stroke="currentColor" strokeWidth="2" />
-                          </svg>
-                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-white font-semibold text-base md:text-lg truncate">{edgeStyle.name}</h3>
+                        <p className="text-gray-300 text-xs md:text-sm leading-relaxed">{edgeStyle.description}</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="bg-gray-700 text-gray-200 px-2 py-1 rounded-full text-xs font-medium">
+                            {edgeStyle.thickness}
+                          </span>
+                          <span className="text-gray-400 text-xs md:text-sm">
+                            ${edgeStyle.price_per_linear_ft}/linear ft
+                          </span>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Edge Style Info */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-white font-semibold text-base md:text-lg truncate">{edgeStyle.name}</h3>
-                      <p className="text-gray-300 text-xs md:text-sm leading-relaxed">{edgeStyle.description}</p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="bg-gray-700 text-gray-200 px-2 py-1 rounded-full text-xs font-medium">
-                          {edgeStyle.thickness}
-                        </span>
-                        <span className="text-gray-400 text-xs md:text-sm">
-                          ${edgeStyle.price_per_linear_ft}/linear ft
-                        </span>
-                      </div>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      {selectedEdgeStyle?.id === edgeStyle.id ? (
+                        <div className="w-7 h-7 md:w-8 md:h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                          <Check className="w-3 h-3 md:w-4 md:h-4 text-white" />
+                        </div>
+                      ) : (
+                        <div className="w-7 h-7 md:w-8 md:h-8 border-2 border-gray-600 rounded-full" />
+                      )}
                     </div>
                   </div>
-
-                  {/* Selection Control */}
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    {selectedEdgeStyle?.id === edgeStyle.id ? (
-                      <div className="w-7 h-7 md:w-8 md:h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                        <Check className="w-3 h-3 md:w-4 md:h-4 text-white" />
-                      </div>
-                    ) : (
-                      <div className="w-7 h-7 md:w-8 md:h-8 border-2 border-gray-600 rounded-full" />
-                    )}
-                  </div>
-                </div>
-              </button>
-            </motion.div>
-          ))}
+                </button>
+              </motion.div>
+            );
+          })}
         </div>
 
 
