@@ -238,15 +238,21 @@ export default function MaterialSelection() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Selected Material:</span>
-                  <span className="font-medium">{selectedMaterial?.name || 'None'}</span>
+                  <span className="font-medium text-gray-900">
+                    {selectedMaterial?.name || 'None'}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Material Price:</span>
-                  <span className="font-medium">${selectedMaterial?.price_per_sqft || 0}/sq ft</span>
+                  <span className="font-medium text-gray-900">
+                    ${selectedMaterial?.price_per_sqft || 0}/sq ft
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Estimated Total:</span>
-                  <span className="font-medium">${calculateTotalPrice().toFixed(2)}</span>
+                  <span className="font-medium text-gray-900">
+                    ${calculateTotalPrice().toFixed(2)}
+                  </span>
                 </div>
               </div>
             </motion.div>

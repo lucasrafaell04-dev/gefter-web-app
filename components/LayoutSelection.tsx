@@ -258,7 +258,9 @@ export default function LayoutSelection() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Selected Shapes:</span>
-                  <span className="font-medium">{selectedShapes.length}</span>
+                  <span className="font-medium text-gray-900">
+                    {selectedShapes.length}
+                  </span>
                 </div>
                 
                 {/* Environment-specific pricing */}
@@ -269,13 +271,17 @@ export default function LayoutSelection() {
                       {selectedEnvironments.includes('kitchen') && (
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Kitchen Total:</span>
-                          <span className="font-medium">${environmentPricing.kitchen.toFixed(2)}</span>
+                          <span className="font-medium text-gray-900">
+                            ${environmentPricing.kitchen.toFixed(2)}
+                          </span>
                         </div>
                       )}
                       {selectedEnvironments.includes('bathroom') && (
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Bathroom Total:</span>
-                          <span className="font-medium">${environmentPricing.bathroom.toFixed(2)}</span>
+                          <span className="font-medium text-gray-900">
+                            ${environmentPricing.bathroom.toFixed(2)}
+                          </span>
                         </div>
                       )}
                     </>
@@ -284,7 +290,9 @@ export default function LayoutSelection() {
                 
                 <div className="flex justify-between text-sm font-semibold border-t pt-2">
                   <span className="text-gray-800">Total Estimated:</span>
-                  <span className="font-bold">${calculateTotalPrice().toFixed(2)}</span>
+                  <span className="font-bold text-gray-900">
+                    ${calculateTotalPrice().toFixed(2)}
+                  </span>
                 </div>
               </div>
             </motion.div>

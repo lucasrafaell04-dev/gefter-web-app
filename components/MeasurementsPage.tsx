@@ -745,15 +745,21 @@ export default function MeasurementsPage() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Shapes Completed:</span>
-                  <span className="font-medium">{currentShapeIndex + 1} of {selectedShapes.length}</span>
+                  <span className="font-medium text-gray-900">
+                    {currentShapeIndex + 1} of {selectedShapes.length}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Current Shape:</span>
-                  <span className="font-medium">{currentShape.layout.name}</span>
+                  <span className="font-medium text-gray-900">
+                    {currentShape.layout.name}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Estimated Total:</span>
-                  <span className="font-medium">${calculateTotalPrice().toFixed(2)}</span>
+                  <span className="font-medium text-gray-900">
+                    ${calculateTotalPrice().toFixed(2)}
+                  </span>
                 </div>
               </div>
             </motion.div>

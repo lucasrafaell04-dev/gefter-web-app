@@ -194,23 +194,33 @@ export default function EdgeSelection() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Room Type:</span>
-                  <span className="font-medium">{useProjectStore.getState().selectedEnvironments.join(', ') || 'Kitchen'}</span>
+                  <span className="font-medium text-gray-900">
+                    {useProjectStore.getState().selectedEnvironments.join(', ') || 'Kitchen'}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Selected Layouts:</span>
-                  <span className="font-medium">{useProjectStore.getState().selectedShapes.length} shapes</span>
+                  <span className="font-medium text-gray-900">
+                    {useProjectStore.getState().selectedShapes.length} shapes
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Selected Material:</span>
-                  <span className="font-medium">{useProjectStore.getState().selectedMaterial?.name || 'None'}</span>
+                  <span className="font-medium text-gray-900">
+                    {useProjectStore.getState().selectedMaterial?.name || 'None'}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Selected Edge Style:</span>
-                  <span className="font-medium">{selectedEdgeStyle?.name || 'None'}</span>
+                  <span className="font-medium text-gray-900">
+                    {selectedEdgeStyle?.name || 'None'}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Estimated Total:</span>
-                  <span className="font-medium">${calculateTotalPrice().toFixed(2)}</span>
+                  <span className="font-medium text-gray-900">
+                    ${calculateTotalPrice().toFixed(2)}
+                  </span>
                 </div>
               </div>
             </motion.div>
