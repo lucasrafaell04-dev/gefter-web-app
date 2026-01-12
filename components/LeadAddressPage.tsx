@@ -13,10 +13,16 @@ export default function LeadAddressPage() {
   const nextStep = useProjectStore(state => state.nextStep);
   const previousStep = useProjectStore(state => state.previousStep);
   const calculateTotalPrice = useProjectStore(state => state.calculateTotalPrice);
+  const selectedShapes = useProjectStore(state => state.selectedShapes);
+  const selectedMaterial = useProjectStore(state => state.selectedMaterial);
+  const selectedEdgeStyle = useProjectStore(state => state.selectedEdgeStyle);
+  const preloadedData = useProjectStore(state => state.preloadedData);
   
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoadingZipCode, setIsLoadingZipCode] = useState(false);
   const [zipCodeMessage, setZipCodeMessage] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const handleInputChange = (field: string, value: string) => {
     updateLeadInfo({ [field]: value });
@@ -127,9 +133,55 @@ export default function LeadAddressPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleContinue = () => {
-    if (validateForm()) {
+  const handleContinue = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    // Validate that we have all required data
+    if (!selectedShapes || selectedShapes.length === 0) {
+      setSaveError('Please complete all previous steps before continuing.');
+      return;
+    }
+
+    if (!selectedMaterial) {
+      setSaveError('Please select a material before continuing.');
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveError(null);
+
+    try {
+      const response = await fetch('/api/quotes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          leadInfo,
+          selectedShapes,
+          selectedMaterial,
+          selectedEdgeStyle,
+          preloadedData,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save quote');
+      }
+
+      const result = await response.json();
+      console.log('Quote saved successfully:', result);
+
+      // Proceed to next step
       nextStep();
+    } catch (error: any) {
+      console.error('Error saving quote:', error);
+      setSaveError(error.message || 'Failed to save your information. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -304,6 +356,17 @@ export default function LeadAddressPage() {
             )}
           </motion.div>
         </div>
+
+        {/* Error Message */}
+        {saveError && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-md mx-auto mt-4 p-4 bg-red-50 border border-red-200 rounded-lg"
+          >
+            <p className="text-red-600 text-sm">{saveError}</p>
+          </motion.div>
+        )}
       </div>
 
       {/* Continue Button */}
@@ -311,14 +374,21 @@ export default function LeadAddressPage() {
         <div className="max-w-4xl mx-auto px-4 py-4">
           <button
             onClick={handleContinue}
-            disabled={!isFormComplete()}
-            className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-colors ${
-              isFormComplete()
+            disabled={!isFormComplete() || isSaving}
+            className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-colors flex items-center justify-center ${
+              isFormComplete() && !isSaving
                 ? 'bg-gray-800 hover:bg-gray-900 text-white'
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }`}
           >
-            Confirm
+            {isSaving ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                Saving...
+              </>
+            ) : (
+              'Confirm'
+            )}
           </button>
         </div>
       </div>
