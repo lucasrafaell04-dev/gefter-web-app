@@ -156,9 +156,9 @@ export async function POST(request: NextRequest) {
           wall_toggles: shape.wallToggles,
           has_backsplash: shape.hasBacksplash || false,
           backsplash_height: shape.backsplashHeight || null,
-          cutouts: Object.keys(cutoutsData).length > 0 ? cutoutsData : null,
-          sinks: Object.keys(sinksData).length > 0 ? sinksData : null,
-          specification: shape.specification || null,
+          cutouts: Object.keys(cutoutsData).length > 0 ? cutoutsData : undefined,
+          sinks: Object.keys(sinksData).length > 0 ? sinksData : undefined,
+          specification: shape.specification ?? undefined,
         });
       }
 
