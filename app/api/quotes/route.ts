@@ -22,19 +22,26 @@ export async function POST(request: NextRequest) {
 
     // Start a transaction to ensure data consistency
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Create lead (without user_id)
+      // 1. Create lead with name and email
       const lead = await tx.leads.create({
         data: {
-          user_id: null,
-          name: leadInfo.fullName || null,
-          zipCode: leadInfo.zipCode || null,
-          city: leadInfo.city || null,
+          name: leadInfo.fullName,
+          email: leadInfo.email,
+          zipCode: leadInfo.zipCode,
+          city: leadInfo.city,
         },
       });
 
-      // 2. Calculate total price
+      // 2. Calculate total price and prepare quote items data
       let totalPrice = 0;
       const quoteItemsData = [];
+
+      // Cutout prices mapping
+      const CUTOUT_PRICES: Record<string, number> = {
+        'faucet-cutout': 75,
+        'cooktop-cutout': 150,
+        'sink-cutout': 150,
+      };
 
       for (const shape of selectedShapes) {
         // Calculate square feet for this shape
@@ -45,6 +52,7 @@ export async function POST(request: NextRequest) {
 
         // Calculate edge cost
         let edgeCost = 0;
+        let edgeLinearFt = 0;
         if (selectedEdgeStyle) {
           const edgeCalculation = CalculationEngine.calculateEdgeLinearFeet(
             shape.measurements,
@@ -56,29 +64,57 @@ export async function POST(request: NextRequest) {
             selectedEdgeStyle
           );
           edgeCost = finalEdgeCalculation.totalEdgeCost;
+          edgeLinearFt = finalEdgeCalculation.linearFeet;
         }
 
-        // Calculate specification costs (cutouts, sinks, etc.)
-        let specificationCost = 0;
-        if (shape.specification) {
-          // Add cutout costs
-          Object.entries(shape.specification.cutouts || {}).forEach(([cutoutId, quantity]) => {
-            specificationCost += (quantity as number) * 50; // $50 per cutout
+        // Calculate cutout costs with actual prices
+        let cutoutCost = 0;
+        const cutoutsData: Record<string, any> = {};
+        if (shape.specification?.cutouts) {
+          Object.entries(shape.specification.cutouts).forEach(([cutoutId, quantity]) => {
+            const cutoutPrice = CUTOUT_PRICES[cutoutId] || 50;
+            const totalCutoutPrice = (quantity as number) * cutoutPrice;
+            cutoutCost += totalCutoutPrice;
+            
+            // Find cutout name from CUTOUT_OPTIONS or use ID
+            const cutoutName = cutoutId === 'faucet-cutout' ? 'Faucet Cutout' :
+                              cutoutId === 'cooktop-cutout' ? 'Cooktop Cutout' :
+                              cutoutId === 'sink-cutout' ? 'Sink Cutout' : cutoutId;
+            
+            cutoutsData[cutoutId] = {
+              quantity: quantity as number,
+              price: cutoutPrice,
+              name: cutoutName,
+              total: totalCutoutPrice,
+            };
           });
+        }
 
-          // Add sink costs
-          Object.entries(shape.specification.sinks || {}).forEach(([sinkId, quantity]) => {
+        // Calculate sink costs
+        let sinkCost = 0;
+        const sinksData: Record<string, any> = {};
+        if (shape.specification?.sinks) {
+          Object.entries(shape.specification.sinks).forEach(([sinkId, quantity]) => {
             const sinkPrice = preloadedData?.sinkMap?.[sinkId]?.price ?? 0;
-            specificationCost += (quantity as number) * sinkPrice;
+            const totalSinkPrice = (quantity as number) * sinkPrice;
+            sinkCost += totalSinkPrice;
+            
+            const sinkName = preloadedData?.sinkMap?.[sinkId]?.name || sinkId;
+            
+            sinksData[sinkId] = {
+              quantity: quantity as number,
+              price: sinkPrice,
+              name: sinkName,
+              total: totalSinkPrice,
+            };
           });
         }
 
         // Calculate subtotal for this item
-        const subtotal = materialCost + edgeCost + specificationCost;
+        const subtotal = materialCost + edgeCost + cutoutCost + sinkCost;
         totalPrice += subtotal;
 
         // Calculate width_ft and length_ft from measurements
-        // Extract width and depth values (handle both camelCase and snake_case)
         const measurements = shape.measurements;
         const widthValues: number[] = [];
         const depthValues: number[] = [];
@@ -106,9 +142,23 @@ export async function POST(request: NextRequest) {
         quoteItemsData.push({
           layout_id: shape.layout.id,
           material_id: selectedMaterial.id,
+          edge_style_id: selectedEdgeStyle?.id || null,
           width_ft: finalWidth,
           length_ft: finalLength,
+          material_cost: materialCost,
+          edge_linear_ft: selectedEdgeStyle ? edgeLinearFt : null,
+          edge_cost: selectedEdgeStyle ? edgeCost : null,
+          cutout_cost: cutoutCost > 0 ? cutoutCost : null,
+          sink_cost: sinkCost > 0 ? sinkCost : null,
           subtotal: subtotal,
+          environment: shape.environment,
+          measurements: shape.measurements,
+          wall_toggles: shape.wallToggles,
+          has_backsplash: shape.hasBacksplash || false,
+          backsplash_height: shape.backsplashHeight || null,
+          cutouts: Object.keys(cutoutsData).length > 0 ? cutoutsData : null,
+          sinks: Object.keys(sinksData).length > 0 ? sinksData : null,
+          specification: shape.specification || null,
         });
       }
 
