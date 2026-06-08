@@ -138,7 +138,7 @@ export default function MaterialSelection() {
                   exit={{ opacity: 0, height: 0 }}
                   className="mt-4 p-4 bg-gray-50 rounded-lg"
                 >
-                  <div className="space-y-2 text-sm">
+                  <div className="space-y-2 text-sm text-gray-900">
                     <div><strong>Brand:</strong> {selectedMaterial.brand || 'N/A'}</div>
                     <div><strong>Color:</strong> {selectedMaterial.color || 'N/A'}</div>
                     <div><strong>Thickness:</strong> {selectedMaterial.thickness}"</div>
