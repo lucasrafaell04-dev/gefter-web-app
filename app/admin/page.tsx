@@ -2,14 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useRouter } from 'next/navigation';
-import { LogOut, Users, FileText, DollarSign, ChevronRight, ChevronDown } from 'lucide-react';
-
-interface AdminUser {
-  id: string;
-  email: string;
-  full_name: string;
-}
+import { Users, FileText, DollarSign, ChevronRight, ChevronDown } from 'lucide-react';
+import AdminShell from '@/components/admin/AdminShell';
 
 interface DashboardStats {
   totalLeads: number;
@@ -28,9 +22,6 @@ interface QuoteDetails {
 }
 
 export default function AdminDashboard() {
-  const router = useRouter();
-  const [user, setUser] = useState<AdminUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [expandedLeads, setExpandedLeads] = useState<Set<string>>(new Set());
   const [leadQuotes, setLeadQuotes] = useState<Record<string, QuoteDetails[]>>({});
   const [loadingQuotes, setLoadingQuotes] = useState<Set<string>>(new Set());
@@ -42,25 +33,8 @@ export default function AdminDashboard() {
   });
 
   useEffect(() => {
-    checkAuth();
     loadDashboardData();
   }, []);
-
-  const checkAuth = async () => {
-    try {
-      const response = await fetch('/api/admin/check');
-      if (!response.ok) {
-        router.push('/admin/login');
-        return;
-      }
-      const data = await response.json();
-      setUser(data.user);
-    } catch (error) {
-      router.push('/admin/login');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const loadDashboardData = async () => {
     try {
@@ -71,15 +45,6 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error('Error loading dashboard data:', error);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/admin/logout', { method: 'POST' });
-      router.push('/admin/login');
-    } catch (error) {
-      console.error('Error logging out:', error);
     }
   };
 
@@ -112,41 +77,8 @@ export default function AdminDashboard() {
     setExpandedLeads(newExpanded);
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-800"></div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-800">Gefter | Marble & Granite Pro Naples</h1>
-              {user && (
-                <p className="text-sm text-gray-600 mt-1">
-                  Welcome, {user.full_name}
-                </p>
-              )}
-            </div>
-            <button
-              onClick={handleLogout}
-              className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <LogOut className="w-5 h-5 mr-2" />
-              Logout
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
+    <AdminShell title="Dashboard">
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <motion.div
@@ -487,8 +419,7 @@ export default function AdminDashboard() {
             </div>
           )}
         </motion.div>
-      </div>
-    </div>
+    </AdminShell>
   );
 }
 
